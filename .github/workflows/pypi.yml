@@ -82,8 +82,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         env:
           MATURIN_REPOSITORY: "testpypi"  # TODO: change to release ("pypi")
-          MATURIN_USERNAME: "andrew-titus"  # TODO: update for release PyPi
-          MATURIN_PASSWORD: ${{ secrets.TEST_PYPI_PASS }}  # TODO: update for release PyPi
+          MATURIN_PYPI_TOKEN: ${{ secrets.TESTPYPI_TOKEN }}  # TODO: update for release PyPi
         with:
           command: upload
           args: --skip-existing *
