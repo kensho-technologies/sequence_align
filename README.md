@@ -25,13 +25,6 @@ are installed on your system. Then, install [Maturin](https://www.maturin.rs/#us
 from the root of your cloned repo to build and install `sequence_align` in your active Python environment.
 
 ## Quick Start
-`sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align/) for Python 3.7+,
-making installation as simple as the following -- no special setup required for cross-platform compatibility, Rust installation, etc.!
-
-``` bash
-pip install sequence_align
-```
-
 Pairwise sequence algorithms are available in [sequence_align.pairwise](src/sequence_align/pairwise.py).
 Currently, two algorithms are implemented: the [Needleman-Wunsch algorithm](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm)
 and [Hirschberg’s algorithm](https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm). Needleman-Wunsch is
