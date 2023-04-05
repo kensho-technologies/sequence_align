@@ -8,7 +8,7 @@
 Efficient implementations of [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm)
 and other sequence alignment algorithms written in Rust with Python bindings via [PyO3](https://github.com/PyO3/pyo3).
 
-<p><img width="800px" src="https://github.com/kensho-technologies/sequence_align/blob/main/docs/images/sequence_align.png"></p>
+<p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/sequence_align.png"></p>
 
 ## Installation
 `sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align) for Python 3.7+, making installation as simple as the following --
@@ -25,13 +25,6 @@ are installed on your system. Then, install [Maturin](https://www.maturin.rs/#us
 from the root of your cloned repo to build and install `sequence_align` in your active Python environment.
 
 ## Quick Start
-`sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align/) for Python 3.7+,
-making installation as simple as the following -- no special setup required for cross-platform compatibility, Rust installation, etc.!
-
-``` bash
-pip install sequence_align
-```
-
 Pairwise sequence algorithms are available in [sequence_align.pairwise](src/sequence_align/pairwise.py).
 Currently, two algorithms are implemented: the [Needleman-Wunsch algorithm](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm)
 and [Hirschberg’s algorithm](https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm). Needleman-Wunsch is
@@ -100,9 +93,9 @@ is **best-in-class**, even when compared to toolkits using the same algorithm, s
 
 _(Please note that some lines terminate early, as some toolkits took prohibitively long and/or ran out of memory at higher scales.)_
 
-<p><img width="800px" src="https://github.com/kensho-technologies/sequence_align/blob/main/docs/images/runtime_benchmark.png"></p>
+<p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/runtime_benchmark.png"></p>
 
-<p><img width="800px" src="https://github.com/kensho-technologies/sequence_align/blob/main/docs/images/memory_benchmark.png"></p>
+<p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/memory_benchmark.png"></p>
 
 ## License
 Licensed under the Apache 2.0 License. Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
