@@ -9,8 +9,10 @@ license-file = "../LICENSE"
 name = "sequence_align"
 crate-type = ["cdylib"]
 
-[dependencies]
-pyo3 = { version = "0.18.0", features = ["extension-module"] }
+[dependencies.pyo3]
+version = "0.18.0"
+# "abi3-py37" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.7
+features = ["abi3-py37"]
 
 # See https://www.maturin.rs/project_layout.html#alternate-python-source-directory-src-layout
 [package.metadata.maturin]
