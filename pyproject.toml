@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sequence_align"
-version = "0.1.0"
+version = "0.1.0b2"
 description = "Efficient implementations of Needleman-Wunsch and other sequence alignment algorithms in Rust with Python bindings."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -51,3 +51,7 @@ dev = [
 
 [tool.black]
 line-length = 100
+
+[tool.maturin]
+# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
+features = ["pyo3/extension-module"]

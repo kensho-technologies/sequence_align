@@ -1,0 +1,88 @@
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: -m rust/Cargo.toml --release --out dist
+          manylinux: auto
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target: [x64, x86]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+          architecture: ${{ matrix.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: -m rust/Cargo.toml --release --out dist
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: -m rust/Cargo.toml --release --out dist
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: "startsWith(github.ref, 'refs/tags/')"
+    needs: [linux, windows, macos]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheels
+      - name: Publish to PyPI
+        uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_REPOSITORY: "testpypi"  # TODO: change to release ("pypi")
+          MATURIN_PYPI_TOKEN: ${{ secrets.TESTPYPI_TOKEN }}  # TODO: update for release PyPi
+        with:
+          command: upload
+          args: --skip-existing *
