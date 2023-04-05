@@ -8,8 +8,11 @@ version = "0.1.0"
 description = "Efficient implementations of Needleman-Wunsch and other sequence alignment algorithms in Rust with Python bindings."
 readme = "README.md"
 requires-python = ">=3.7"
-authors =  [
-    {name = "Kensho Technologies, LLC.", email = "sequence-align-maintainer@kensho.com"},
+authors = [
+    {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
+]
+maintainers = [
+    {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
 ]
 # Apache 2.0
 license = {file = "LICENSE"}
