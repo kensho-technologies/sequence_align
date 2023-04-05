@@ -9,11 +9,10 @@ description = "Efficient implementations of Needleman-Wunsch and other sequence 
 readme = "README.md"
 requires-python = ">=3.7"
 authors = [
-    # See AUTHORS.md
-    {name = "Andrew Titus", email = "andrew.titus@kensho.com"},
+    {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
 ]
-maintainers =  [
-    {name = "Kensho Technologies, LLC.", email = "sequence-align-maintainer@kensho.com"},
+maintainers = [
+    {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
 ]
 # Apache 2.0
 license = {file = "LICENSE"}
