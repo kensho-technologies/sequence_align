@@ -13,9 +13,24 @@ authors =  [
 ]
 # Apache 2.0
 license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
+]
 
 [project.urls]
 source = "https://github.com/kensho-technologies/sequence_align"
+"Homepage" = "https://github.com/kensho-technologies/sequence_align"
+"Bug Tracker" = "https://github.com/kensho-technologies/sequence_align/issues"
 
 [project.optional-dependencies]
 dev = [
