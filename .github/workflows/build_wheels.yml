@@ -68,21 +68,3 @@ jobs:
         with:
           name: wheels
           path: dist
-
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    # if: "startsWith(github.ref, 'refs/tags/')"  # TODO: reenable for release PyPi
-    needs: [linux, windows, macos]
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: wheels
-      - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
-        env:
-          MATURIN_REPOSITORY: "testpypi"  # TODO: change to release ("pypi")
-          MATURIN_PYPI_TOKEN: ${{ secrets.TESTPYPI_TOKEN }}  # TODO: update for release PyPi
-        with:
-          command: upload
-          args: --skip-existing *
