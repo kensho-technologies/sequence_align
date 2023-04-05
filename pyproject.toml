@@ -1,0 +1,35 @@
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
+[project]
+name = "sequence_align"
+version = "0.1.0"
+description = "Efficient implementations of Needleman-Wunsch and other sequence alignment algorithms in Rust with Python bindings."
+readme = "README.md"
+requires-python = ">=3.7"
+authors =  [
+    {name = "Kensho Technologies, LLC.", email = "sequence-align-maintainer@kensho.com"},
+]
+# Apache 2.0
+license = {file = "LICENSE"}
+
+[project.urls]
+source = "https://github.com/kensho-technologies/sequence_align"
+
+[project.optional-dependencies]
+dev = [
+    "bandit",
+    "black",
+    "codecov",
+    "flake8",
+    "isort>=5.0.0,<6",
+    "mypy",
+    "pydocstyle",
+    "pylint",
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.black]
+line-length = 100

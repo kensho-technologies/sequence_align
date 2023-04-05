@@ -1,0 +1,37 @@
+[package]
+name = "sequence_align"
+version = "0.1.0"
+edition = "2021"
+license-file = "../LICENSE"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "sequence_align"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.18.0", features = ["extension-module"] }
+
+# See https://www.maturin.rs/project_layout.html#alternate-python-source-directory-src-layout
+[package.metadata.maturin]
+name = "sequence_align._sequence_align"
+
+# Some additional optimizations; see https://deterministic.space/high-performance-rust.html
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+overflow-checks = true
+
+# See https://stackoverflow.com/questions/69129475/rust-pyo3-linking-with-cc-failed
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
