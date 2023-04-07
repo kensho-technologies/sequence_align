@@ -1,0 +1,16 @@
+# This file contains numbers for expected performance of various testing setups.
+# These may need to be updated over time, but only if the change in performance is expected.
+needleman_wunsch:
+  runtime:
+    median: 0.55
+    tolerance: 0.20  # +/- 20%
+  memory:
+    median: 1750.0  # MiB
+    tolerance: 0.20  # +/- 20%
+hirschberg:
+  runtime:
+    median: 0.325
+    tolerance: 0.20  # +/- 20%
+  memory:
+    median: 38.0  # MiB
+    tolerance: 0.20  # +/- 20%

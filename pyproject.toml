@@ -42,11 +42,14 @@ dev = [
     "codecov",
     "flake8",
     "isort>=5.0.0,<6",
+    "memory_profiler",
     "mypy",
     "pydocstyle",
     "pylint",
     "pytest",
     "pytest-cov",
+    "pyyaml",
+    "types-pyyaml",
 ]
 
 [tool.black]
@@ -55,3 +58,6 @@ line-length = 100
 [tool.maturin]
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
 features = ["pyo3/extension-module"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]

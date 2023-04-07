@@ -34,7 +34,7 @@ jobs:
       - name: Run lint checks
         run: |
           ./scripts/lint.sh ${{ matrix.lint-flags }}
-  tests:
+  unit_tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -49,9 +49,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
-      - name: Test with pytest
+      - name: Run unit tests with pytest
         run: |
-          pytest --cov=src/sequence_align tests
+          pytest --cov=src/sequence_align tests/unit
           codecov
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
+  perf_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+      - name: Run performance tests with pytest
+        run: |
+          pytest --cov=src/sequence_align tests/perf
