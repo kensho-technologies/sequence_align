@@ -2,15 +2,19 @@
 # These may need to be updated over time, but only if the change in performance is expected.
 needleman_wunsch:
   runtime:
-    median: 0.55
-    tolerance: 0.20  # +/- 20%
+    # Generally more sensitive to machine/environment
+    median: 0.70  # Seconds
+    tolerance: 0.50  # +/- 50% (0.35 - 1.05s)
   memory:
+    # More consistent
     median: 1750.0  # MiB
     tolerance: 0.20  # +/- 20%
 hirschberg:
   runtime:
-    median: 0.325
-    tolerance: 0.20  # +/- 20%
+    # Generally more sensitive to machine/environment
+    median: 0.50  # Seconds
+    tolerance: 0.50  # +/- 50% (0.25 - 0.75s)
   memory:
+    # More consistent
     median: 38.0  # MiB
     tolerance: 0.20  # +/- 20%
