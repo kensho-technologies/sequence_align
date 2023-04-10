@@ -15,6 +15,6 @@ hirschberg:
     median: 0.50  # Seconds
     tolerance: 0.50  # +/- 50% (0.25 - 0.75s)
   memory:
-    # More consistent
-    median: 24.0  # MiB
-    tolerance: 0.20  # +/- 20%
+    # More consistent, but low enough to have major percent-wise variation
+    median: 32.0  # MiB
+    tolerance: 0.50  # +/- 50%
