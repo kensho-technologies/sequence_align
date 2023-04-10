@@ -3,11 +3,9 @@ import time
 from typing import Any, Dict
 import unittest
 
-from memory_profiler import memory_usage  # type: ignore[import]
-
 from sequence_align.pairwise import hirschberg
 
-from .utils import create_seq_pair, get_expected_perf
+from .utils import create_seq_pair, get_expected_perf, max_memory_usage
 
 
 # Fix these so that we run with the same scores, even if defaults change
@@ -19,8 +17,8 @@ DEFAULT_GAP = "_"
 RUNTIME_SEQ_A_LEN = 5_000
 RUNTIME_TRIALS = 9
 
-MEMORY_SEQ_A_LEN = 10_000
-MEMORY_TRIALS = 5
+MEMORY_SEQ_A_LEN = 25_000
+MEMORY_TRIALS = 3
 
 
 class TestHirschberg(unittest.TestCase):
@@ -71,19 +69,15 @@ Consider adjusting the median number and/or tolerance if this change in performa
 
         max_mems = list()
         for _ in range(MEMORY_TRIALS):
-            max_mem = max(
-                memory_usage(
-                    (
-                        hirschberg,
-                        (seq_a, seq_b),
-                        {
-                            "match_score": MATCH_SCORE,
-                            "mismatch_score": MISMATCH_SCORE,
-                            "indel_score": INDEL_SCORE,
-                            "gap": DEFAULT_GAP,
-                        },
-                    )
-                )
+            max_mem = max_memory_usage(
+                hirschberg,
+                (seq_a, seq_b),
+                {
+                    "match_score": MATCH_SCORE,
+                    "mismatch_score": MISMATCH_SCORE,
+                    "indel_score": INDEL_SCORE,
+                    "gap": DEFAULT_GAP,
+                },
             )
             max_mems.append(max_mem)
 

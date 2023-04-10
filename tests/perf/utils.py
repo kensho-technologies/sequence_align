@@ -1,8 +1,10 @@
 # Copyright 2023-present Kensho Technologies, LLC.
+import multiprocessing as mp
 import os
 import random
-from typing import Any, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
+import psutil
 import yaml
 
 
@@ -15,6 +17,7 @@ MUTATE_PROB = 0.5
 INSERT_PROB = 0.5
 
 EXPECTED_PERF_YML = os.path.join(os.path.dirname(__file__), "expected_perf.yml")
+MEM_CHECK_INTERVAL = 0.01  # seconds
 
 
 def _create_perturbed_seq(seq_a: List[str]) -> List[str]:
@@ -57,3 +60,23 @@ def get_expected_perf(key: str) -> Any:
     with open(EXPECTED_PERF_YML, "r") as fd:
         expected_perf_full = yaml.safe_load(fd)
     return expected_perf_full[key]
+
+
+def max_memory_usage(
+    func: Callable[..., Any], args: Tuple[Any, ...], kwargs: Dict[str, Any]
+) -> int:
+    """Run the given function in a separate process and return the maximum memory usage in MiB."""
+    max_mem = 0
+    mp_proc = mp.Process(target=func, args=args, kwargs=kwargs)
+    mp_proc.start()
+    psutil_proc = psutil.Process(pid=mp_proc.pid)
+    while True:
+        try:
+            max_mem = max(max_mem, psutil_proc.memory_info().rss)  # kB
+            mp_proc.join(timeout=MEM_CHECK_INTERVAL)
+            if mp_proc.exitcode is not None:
+                break
+        except psutil.NoSuchProcess:
+            # Process finished since last check -- exit early
+            break
+    return max_mem // (1024 * 1024)

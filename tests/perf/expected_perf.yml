@@ -7,7 +7,7 @@ needleman_wunsch:
     tolerance: 0.50  # +/- 50% (0.35 - 1.05s)
   memory:
     # More consistent
-    median: 1750.0  # MiB
+    median: 1500.0  # MiB
     tolerance: 0.20  # +/- 20%
 hirschberg:
   runtime:
@@ -16,5 +16,5 @@ hirschberg:
     tolerance: 0.50  # +/- 50% (0.25 - 0.75s)
   memory:
     # More consistent
-    median: 38.0  # MiB
+    median: 24.0  # MiB
     tolerance: 0.20  # +/- 20%

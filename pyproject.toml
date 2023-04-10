@@ -42,13 +42,14 @@ dev = [
     "codecov",
     "flake8",
     "isort>=5.0.0,<6",
-    "memory_profiler",
     "mypy",
+    "psutil",
     "pydocstyle",
     "pylint",
     "pytest",
     "pytest-cov",
     "pyyaml",
+    "types-psutil",
     "types-pyyaml",
 ]
 
