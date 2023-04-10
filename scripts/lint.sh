@@ -193,7 +193,7 @@ fi
 
 if [ "$run_bandit" -eq 1 ]; then
     echo -e '\n*** Running bandit... ***\n'
-    bandit -r $py_lintable_locations
+    bandit -c ./pyproject.toml -r $py_lintable_locations
     bandit_exit_code=$?
     echo -e "\n*** End of bandit run, exit: $bandit_exit_code ***\n"
 fi
