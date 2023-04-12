@@ -45,16 +45,18 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
+      - name: Install codecov dependencies
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
       - name: Run unit tests with pytest
         run: |
           pytest --cov=src/sequence_align tests/unit
-          codecov
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+          ./codecov -t ${CODECOV_TOKEN}
   perf_tests:
     runs-on: ubuntu-latest
     strategy:
@@ -66,10 +68,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
       - name: Run performance tests with pytest
         run: |
-          pytest --cov=src/sequence_align tests/perf
+          pytest tests/perf
