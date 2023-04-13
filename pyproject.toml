@@ -39,7 +39,6 @@ source = "https://github.com/kensho-technologies/sequence_align"
 dev = [
     "bandit",
     "black",
-    "codecov",
     "flake8",
     "isort>=5.0.0,<6",
     "mypy",
