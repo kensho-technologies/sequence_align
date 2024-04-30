@@ -12,8 +12,8 @@ needleman_wunsch:
 hirschberg:
   runtime:
     # Generally more sensitive to machine/environment
-    median: 0.50  # Seconds
-    tolerance: 0.50  # +/- 50% (0.25 - 0.75s)
+    median: 0.375  # Seconds
+    tolerance: 0.50  # +/- 50% (0.1875 - 0.5625s)
   memory:
     # More consistent, but low enough to have major percent-wise variation
     median: 32.0  # MiB
