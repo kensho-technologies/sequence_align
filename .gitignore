@@ -80,6 +80,9 @@ docs/_build/
 # mypy
 .mypy_cache/
 
+# Wheels directory for upload to PyPI
+wheels/
+
 
 # RUST
 
