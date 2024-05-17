@@ -1,8 +1,8 @@
 [package]
 name = "sequence_align"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-license-file = "../LICENSE"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -10,13 +10,9 @@ name = "sequence_align"
 crate-type = ["cdylib"]
 
 [dependencies.pyo3]
-version = "0.18.0"
+version = "0.20.0"
 # "abi3-py37" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.7
 features = ["abi3-py37"]
-
-# See https://www.maturin.rs/project_layout.html#alternate-python-source-directory-src-layout
-[package.metadata.maturin]
-name = "sequence_align._sequence_align"
 
 # Some additional optimizations; see https://deterministic.space/high-performance-rust.html
 [profile.release]
