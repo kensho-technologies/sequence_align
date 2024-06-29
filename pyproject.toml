@@ -50,6 +50,9 @@ dev = [
     "pyyaml",
     "types-psutil",
     "types-pyyaml",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings",
 ]
 
 [tool.black]
