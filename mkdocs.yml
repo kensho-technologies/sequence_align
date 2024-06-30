@@ -1,0 +1,69 @@
+site_name: sequence_align
+
+theme:
+  name: "material"
+  features:
+    # - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.expand
+    - navigation.top
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue-grey
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue-grey
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+repo_name: PPPModels
+repo_url: https://github.com/kensho-technologies/sequence_align
+edit_uri: blob/main/docs/
+site_url: https://kensho-technologies.github.io/sequence_align/
+
+extra: 
+  homepage: https://kensho-technologies.github.io/
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kensho-technologies/sequence_align
+
+nav:
+  - Overview: index.md
+  - Methodology: methodology.md
+  - Examples: examples.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.arithmatex: 
+      generic: true
+  - pymdownx.details
+  - admonition
+
+extra_javascript: 
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js 
+
