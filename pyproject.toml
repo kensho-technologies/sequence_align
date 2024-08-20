@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sequence_align"
-version = "0.1.2"
+version = "0.2.0"
 description = "Efficient implementations of Needleman-Wunsch and other sequence alignment algorithms in Rust with Python bindings."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -47,6 +47,7 @@ dev = [
     "pylint",
     "pytest",
     "pytest-cov",
+    "pytest-subtests",
     "pyyaml",
     "types-psutil",
     "types-pyyaml",

@@ -424,10 +424,52 @@ pub fn hirschberg(
     Ok((aligned_seq_one, aligned_seq_two))
 }
 
+/// Compute the alignment score for the given pair of aligned sequences.
+///
+/// # Notes
+/// The sequences must be of equal length.
+///
+/// # Complexity
+/// This takes O(n) time and O(1) space complexity, where n is the length of the sequence.
+///
+/// # References
+/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+#[pyfunction]
+#[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
+pub fn alignment_score(
+    seq_one: Vec<i64>,
+    seq_two: Vec<i64>,
+    match_score: f64,
+    mismatch_score: f64,
+    indel_score: f64,
+    gap_val: i64,
+) -> PyResult<f64> {
+    let seq_one_len = seq_one.len();
+    let seq_two_len = seq_two.len();
+    if seq_one_len != seq_two_len {
+        return Err(PyValueError::new_err(
+            "Sequence lengths must match! Make sure to align the sequences before calling alignment_score()."
+        ));
+    }
+
+    let mut score = 0.0;
+    for seq_idx in 0..seq_one_len {
+        if seq_one[seq_idx] == seq_two[seq_idx] {
+            score += match_score;
+        } else if (seq_one[seq_idx] == gap_val) || (seq_two[seq_idx] == gap_val) {
+            score += indel_score;
+        } else {
+            score += mismatch_score;
+        }
+    }
+    Ok(score)
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn _sequence_align(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(needleman_wunsch, m)?)?;
     m.add_function(wrap_pyfunction!(hirschberg, m)?)?;
+    m.add_function(wrap_pyfunction!(alignment_score, m)?)?;
     Ok(())
 }
