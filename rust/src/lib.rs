@@ -424,6 +424,23 @@ pub fn hirschberg(
     Ok((aligned_seq_one, aligned_seq_two))
 }
 
+fn score_pair(
+    seq_one_val: i64,
+    seq_two_val: i64,
+    match_score: f64,
+    mismatch_score: f64,
+    indel_score: f64,
+    gap_val: i64,
+) -> f64 {
+    if seq_one_val == seq_two_val {
+        match_score
+    } else if (seq_one_val == gap_val) || (seq_two_val == gap_val) {
+        return indel_score;
+    } else {
+        return mismatch_score;
+    }
+}
+
 /// Compute the alignment score for the given pair of aligned sequences.
 ///
 /// # Notes
@@ -452,16 +469,11 @@ pub fn alignment_score(
         ));
     }
 
-    let mut score = 0.0;
-    for seq_idx in 0..seq_one_len {
-        if seq_one[seq_idx] == seq_two[seq_idx] {
-            score += match_score;
-        } else if (seq_one[seq_idx] == gap_val) || (seq_two[seq_idx] == gap_val) {
-            score += indel_score;
-        } else {
-            score += mismatch_score;
-        }
-    }
+    let score = seq_one
+        .iter()
+        .zip(seq_two.iter())
+        .map(|(v1, v2)| score_pair(*v1, *v2, match_score, mismatch_score, indel_score, gap_val))
+        .sum::<f64>();
     Ok(score)
 }
 

@@ -8,7 +8,7 @@ from sequence_align.pairwise import alignment_score
 DEFAULT_GAP = "?"
 
 
-class TestNWScore(unittest.TestCase):
+class TestAlignmentScore(unittest.TestCase):
     def test_empty(self) -> None:
         """Score of two empty sequences should always be zero."""
         self.assertEqual(alignment_score([], []), 0)

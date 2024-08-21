@@ -146,7 +146,7 @@ def hirschberg(
         See https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm for more information.
     """
     # First, map the sequences to integers
-    idx2symbol, seq_a_indices, seq_b_indices = _entry2idx(seq_a, seq_b, gap=gap)
+    idx2symbol, seq_a_indices, seq_b_indices = _entry2idx(seq_a, seq_b, gap)
 
     # Now, run alignment in Rust
     seq_a_indices_aligned, seq_b_indices_aligned = _sequence_align.hirschberg(
