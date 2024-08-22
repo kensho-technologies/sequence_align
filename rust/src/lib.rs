@@ -435,9 +435,9 @@ fn score_pair(
     if seq_one_val == seq_two_val {
         match_score
     } else if (seq_one_val == gap_val) || (seq_two_val == gap_val) {
-        return indel_score;
+        indel_score
     } else {
-        return mismatch_score;
+        mismatch_score
     }
 }
 
