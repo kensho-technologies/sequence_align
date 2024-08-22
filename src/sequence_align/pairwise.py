@@ -1,5 +1,5 @@
 # Copyright 2023-present Kensho Technologies, LLC.
-from typing import List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 from sequence_align import _sequence_align  # type: ignore
 
@@ -11,11 +11,18 @@ def _entry2idx(
     seq_a: Sequence[str],
     seq_b: Sequence[str],
     gap: str,
-) -> Tuple[List[str], List[int], List[int]]:
-    idx2symbol = sorted(set(seq_a).union(set(seq_b)))
-    symbol2idx = {idx2symbol[idx]: idx for idx in range(len(idx2symbol))}
-    if gap in symbol2idx:
+    allow_gap: bool = False,
+) -> Tuple[Dict[int, str], List[int], List[int]]:
+    symbols = set(seq_a).union(set(seq_b))
+    if not allow_gap and gap in symbols:
         raise ValueError(f'Gap entry "{gap}" found in seq_a and/or seq_b; must not exist in either')
+
+    symbols_without_gap = symbols - {gap}
+    idx2symbol: Dict[int, str] = {
+        _GAP_VAL: gap,
+        **{idx: symbol for idx, symbol in enumerate(sorted(symbols_without_gap))},
+    }
+    symbol2idx = {symbol: idx for idx, symbol in idx2symbol.items()}
 
     seq_a_indices = [symbol2idx[symbol] for symbol in seq_a]
     seq_b_indices = [symbol2idx[symbol] for symbol in seq_b]
@@ -24,7 +31,7 @@ def _entry2idx(
 
 
 def _idx2entry(
-    idx2symbol: List[str],
+    idx2symbol: Dict[int, str],
     seq_a_indices_aligned: List[int],
     seq_b_indices_aligned: List[int],
     gap: str,
@@ -46,7 +53,7 @@ def needleman_wunsch(
 
     Args:
         seq_a: First sequence in pair to align.
-        seq_b: Second sequence in paior to align.
+        seq_b: Second sequence in pair to align.
         match_score: Score to apply for transitions where the sequences match each other at a given
             index. Defaults to 1.
         mismatch_score: Score to apply for transitions where the sequences do _not_ match each other
@@ -82,10 +89,10 @@ def needleman_wunsch(
     seq_a_indices_aligned, seq_b_indices_aligned = _sequence_align.needleman_wunsch(
         seq_a_indices,
         seq_b_indices,
-        match_score,
-        mismatch_score,
-        indel_score,
-        _GAP_VAL,
+        match_score=match_score,
+        mismatch_score=mismatch_score,
+        indel_score=indel_score,
+        gap_val=_GAP_VAL,
     )
 
     # Finally, map back and return
@@ -104,7 +111,7 @@ def hirschberg(
 
     Args:
         seq_a: First sequence in pair to align.
-        seq_b: Second sequence in paior to align.
+        seq_b: Second sequence in pair to align.
         match_score: Score to apply for transitions where the sequences match each other at a given
             index. Defaults to 1.
         mismatch_score: Score to apply for transitions where the sequences do _not_ match each other
@@ -145,11 +152,58 @@ def hirschberg(
     seq_a_indices_aligned, seq_b_indices_aligned = _sequence_align.hirschberg(
         seq_a_indices,
         seq_b_indices,
-        match_score,
-        mismatch_score,
-        indel_score,
-        _GAP_VAL,
+        match_score=match_score,
+        mismatch_score=mismatch_score,
+        indel_score=indel_score,
+        gap_val=_GAP_VAL,
     )
 
     # Finally, map back and return
     return _idx2entry(idx2symbol, seq_a_indices_aligned, seq_b_indices_aligned, gap)
+
+
+def alignment_score(
+    aligned_seq_a: Sequence[str],
+    aligned_seq_b: Sequence[str],
+    match_score: float = 1.0,
+    mismatch_score: float = -1.0,
+    indel_score: float = -1.0,
+    gap: str = "-",
+) -> float:
+    """Compute the alignment score for the pair of sequences.
+
+    Args:
+        aligned_seq_a: First aligned sequence.
+        aligned_seq_b: Second aligned sequence.
+        match_score: Score to apply for transitions where the sequences match each other at a given
+            index. Defaults to 1.
+        mismatch_score: Score to apply for transitions where the sequences do _not_ match each other
+            at a given index. Defaults to -1.
+        indel_score: Score to apply for insertion/deletion transitions where one sequence advances
+            without the other advancing (thus inserting a gap). Defaults to -1.
+        gap: Value to use for marking gaps in the aligned sequences. Defaults to "-".
+
+    Returns:
+        Needleman-Wunsch alignment score representing the sum of match, mismatch and
+        insertion/deletion transition scores for the provided alignment.
+
+    Note:
+        See `NWScore()` function at
+        https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm for more information.
+    """
+    # First, map the sequences to integers
+    _, aligned_seq_a_indices, aligned_seq_b_indices = _entry2idx(
+        aligned_seq_a, aligned_seq_b, gap, allow_gap=True
+    )
+
+    # Now, get the score
+    return float(
+        _sequence_align.alignment_score(
+            aligned_seq_a_indices,
+            aligned_seq_b_indices,
+            match_score=match_score,
+            mismatch_score=mismatch_score,
+            indel_score=indel_score,
+            gap_val=_GAP_VAL,
+        )
+    )

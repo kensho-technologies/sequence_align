@@ -33,10 +33,13 @@ where `M` and `N` are the lengths of the two sequences being aligned. Hirschberg
 to have the same time complexity (`O(M*N)`), but only use `O(min{M, N})` space, making it an appealing option
 for memory-limited applications or extremely large sequences.
 
+One may also compute the Needleman-Wunsch alignment score for alignments produced by either algorithm
+using [sequence_align.pairwise.alignment_score](src/sequence_align/pairwise.py).
+
 Using these algorithms is straightforward:
 
 ``` python
-from sequence_align.pairwise import hirschberg, needleman_wunsch
+from sequence_align.pairwise import alignment_score, hirschberg, needleman_wunsch
 
 
 # See https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm#/media/File:Needleman-Wunsch_pairwise_sequence_alignment.png
@@ -59,6 +62,17 @@ print(aligned_seq_a)
 # Expects ["G", "C", "A", "_", "T", "G", "C", "G"]
 print(aligned_seq_b)
 
+# Expects 0
+score = alignment_score(
+    aligned_seq_a,
+    aligned_seq_b,
+    match_score=1.0,
+    mismatch_score=-1.0,
+    indel_score=-1.0,
+    gap="_",
+)
+print(score)
+
 
 # See https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm#Example
 seq_a = ["A", "G", "T", "A", "C", "G", "C", "A"]
@@ -78,6 +92,17 @@ print(aligned_seq_a)
 
 # Expects ["_", "_", "T", "A", "T", "G", "C", "_"]
 print(aligned_seq_b)
+
+# Expects 1
+score = alignment_score(
+    aligned_seq_a,
+    aligned_seq_b,
+    match_score=2.0,
+    mismatch_score=-1.0,
+    indel_score=-2.0,
+    gap="_",
+)
+print(score)
 ```
 
 ## Performance Benchmarks
