@@ -4,26 +4,24 @@ build-backend = "maturin"
 
 [project]
 name = "sequence_align"
-version = "0.2.0"
+version = "0.3.0"
 description = "Efficient implementations of Needleman-Wunsch and other sequence alignment algorithms in Rust with Python bindings."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9,<3.14"
 authors = [
     {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
 ]
 maintainers = [
     {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
 ]
-license-files.paths = [
-    "LICENSE",  # Apache 2.0
-]
+license = {file = "LICENSE"}  # Apache 2.0
 classifiers = [
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Rust",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Bio-Informatics",

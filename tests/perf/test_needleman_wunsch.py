@@ -1,6 +1,6 @@
 # Copyright 2023-present Kensho Technologies, LLC.
 import time
-from typing import Any, Dict
+from typing import Any
 import unittest
 
 from sequence_align.pairwise import needleman_wunsch
@@ -23,7 +23,7 @@ MEMORY_TRIALS = 5
 
 class TestNeedlemanWunsch(unittest.TestCase):
     # Needed for mypy to not complain
-    expected_perf: Dict[str, Any] = dict()
+    expected_perf: dict[str, Any] = dict()
 
     @classmethod
     def setUpClass(cls) -> None:

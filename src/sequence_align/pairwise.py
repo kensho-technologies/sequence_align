@@ -1,5 +1,5 @@
 # Copyright 2023-present Kensho Technologies, LLC.
-from typing import Dict, List, Sequence, Tuple
+from typing import Sequence
 
 from sequence_align import _sequence_align  # type: ignore
 
@@ -12,13 +12,13 @@ def _entry2idx(
     seq_b: Sequence[str],
     gap: str,
     allow_gap: bool = False,
-) -> Tuple[Dict[int, str], List[int], List[int]]:
+) -> tuple[dict[int, str], list[int], list[int]]:
     symbols = set(seq_a).union(set(seq_b))
     if not allow_gap and gap in symbols:
         raise ValueError(f'Gap entry "{gap}" found in seq_a and/or seq_b; must not exist in either')
 
     symbols_without_gap = symbols - {gap}
-    idx2symbol: Dict[int, str] = {
+    idx2symbol: dict[int, str] = {
         _GAP_VAL: gap,
         **{idx: symbol for idx, symbol in enumerate(sorted(symbols_without_gap))},
     }
@@ -31,11 +31,11 @@ def _entry2idx(
 
 
 def _idx2entry(
-    idx2symbol: Dict[int, str],
-    seq_a_indices_aligned: List[int],
-    seq_b_indices_aligned: List[int],
+    idx2symbol: dict[int, str],
+    seq_a_indices_aligned: list[int],
+    seq_b_indices_aligned: list[int],
     gap: str,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     seq_a_aligned = [gap if idx == _GAP_VAL else idx2symbol[idx] for idx in seq_a_indices_aligned]
     seq_b_aligned = [gap if idx == _GAP_VAL else idx2symbol[idx] for idx in seq_b_indices_aligned]
     return (seq_a_aligned, seq_b_aligned)
@@ -48,7 +48,7 @@ def needleman_wunsch(
     mismatch_score: float = -1.0,
     indel_score: float = -1.0,
     gap: str = "-",
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """Compute an optimal global pairwise alignment using the Needleman-Wunsch algorithm.
 
     Args:
@@ -106,7 +106,7 @@ def hirschberg(
     mismatch_score: float = -1.0,
     indel_score: float = -1.0,
     gap: str = "-",
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """Compute an optimal global pairwise alignment using the Hirschberg algorithm.
 
     Args:
