@@ -11,7 +11,7 @@ and other sequence alignment algorithms written in Rust with Python bindings via
 <p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/sequence_align.png"></p>
 
 ## Installation
-`sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align) for Python 3.7+, making installation as simple as the following --
+`sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align) for Python 3.9 - 3.13, making installation as simple as the following --
 no special setup required for cross-platform compatibility, Rust installation, etc.!
 
 ``` bash

@@ -2,7 +2,7 @@
 import multiprocessing as mp
 import os
 import random
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable
 
 import psutil
 import yaml
@@ -20,7 +20,7 @@ EXPECTED_PERF_YML = os.path.join(os.path.dirname(__file__), "expected_perf.yml")
 MEM_CHECK_INTERVAL = 0.01  # seconds
 
 
-def _create_perturbed_seq(seq_a: List[str]) -> List[str]:
+def _create_perturbed_seq(seq_a: list[str]) -> list[str]:
     random.seed(1234)
 
     seq_b = list()
@@ -48,7 +48,7 @@ def _create_perturbed_seq(seq_a: List[str]) -> List[str]:
     return seq_b
 
 
-def create_seq_pair(seq_a_len: int) -> Tuple[List[str], List[str]]:
+def create_seq_pair(seq_a_len: int) -> tuple[list[str], list[str]]:
     """Create a pair of sequences, where the second is a perturbed version of the first."""
     seq_a = random.choices(CHARS, k=seq_a_len)
     seq_b = _create_perturbed_seq(seq_a)
@@ -63,7 +63,7 @@ def get_expected_perf(key: str) -> Any:
 
 
 def max_memory_usage(
-    func: Callable[..., Any], args: Tuple[Any, ...], kwargs: Dict[str, Any]
+    func: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> int:
     """Run the given function in a separate process and return the maximum memory usage in MiB."""
     max_mem = 0
