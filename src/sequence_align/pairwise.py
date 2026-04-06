@@ -1,5 +1,6 @@
 # Copyright 2023-present Kensho Technologies, LLC.
-from typing import Callable, Sequence, TypeVar
+from collections.abc import Callable, Sequence
+from typing import TypeVar
 
 from sequence_align import _sequence_align  # type: ignore
 

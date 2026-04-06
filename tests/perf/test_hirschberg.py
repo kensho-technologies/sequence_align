@@ -58,8 +58,8 @@ class TestHirschberg(unittest.TestCase):
         self.assertLessEqual(
             abs(diff_pct),
             tolerance,
-            msg=f"""Expected runtime to be within {tolerance * 100.}% of {exp_median:.3f}s.
-Got {median_runtime:.3f}s ({sign}{100. * diff_pct}%) instead.
+            msg=f"""Expected runtime to be within {tolerance * 100.0}% of {exp_median:.3f}s.
+Got {median_runtime:.3f}s ({sign}{100.0 * diff_pct}%) instead.
 
 Consider adjusting the median number and/or tolerance if this change in performance is expected.""",
         )
@@ -91,8 +91,8 @@ Consider adjusting the median number and/or tolerance if this change in performa
         self.assertLessEqual(
             abs(diff_pct),
             tolerance,
-            msg=f"""Expected memory to be within {tolerance * 100.}% of {exp_median:.3f}MiB.
-Got {median_max_mem:.3f}MiB ({sign}{100. * diff_pct}%) instead.
+            msg=f"""Expected memory to be within {tolerance * 100.0}% of {exp_median:.3f}MiB.
+Got {median_max_mem:.3f}MiB ({sign}{100.0 * diff_pct}%) instead.
 
 Consider adjusting the median number and/or tolerance if this change in performance is expected.""",
         )
