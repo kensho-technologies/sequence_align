@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Update Python version support to 3.10-3.14 (drop 3.9, add 3.14).
+- Replace legacy linting toolchain (black, flake8, isort, pylint, pydocstyle, bandit) with ruff and mypy.
 
 ## v0.3.0 - 2025-03-05
 

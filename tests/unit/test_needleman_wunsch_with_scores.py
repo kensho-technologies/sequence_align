@@ -9,6 +9,7 @@ DEFAULT_GAP = "_"
 
 
 def match_mismatch(a: Any, b: Any) -> float:
+    """Same score as default Needleman-Wunsch."""
     return 1.0 if a == b else -1.0
 
 

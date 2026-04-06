@@ -17,9 +17,7 @@ jobs:
         python-version: [3.14]
         lint-flags:
           - "--run-only-fast-linters"
-          - "--run-only-pylint"
           - "--run-only-mypy"
-          - "--run-only-bandit"
           - "--run-only-cargo-clippy"
     steps:
       - uses: actions/checkout@v4
