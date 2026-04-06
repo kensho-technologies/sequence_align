@@ -4,7 +4,6 @@ import unittest
 
 from sequence_align.pairwise import needleman_wunsch
 
-
 DEFAULT_GAP = "_"
 
 

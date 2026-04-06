@@ -7,7 +7,6 @@ from typing import Any, Callable
 import psutil
 import yaml
 
-
 DEFAULT_GAP = "_"
 
 CHARS = ["A", "C", "G", "T"]

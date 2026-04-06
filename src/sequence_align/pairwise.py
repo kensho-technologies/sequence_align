@@ -3,7 +3,6 @@ from typing import Callable, Sequence, TypeVar
 
 from sequence_align import _sequence_align  # type: ignore
 
-
 T = TypeVar("T")
 
 

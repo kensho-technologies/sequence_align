@@ -20,7 +20,7 @@ use std::cmp;
 /// sequences, respectively.
 ///
 /// # References
-/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+/// <https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm>
 #[pyfunction]
 #[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
 pub fn needleman_wunsch(
@@ -214,7 +214,7 @@ pub fn needleman_wunsch(
 /// sequences, respectively.
 ///
 /// # References
-/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+/// <https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm>
 #[pyfunction]
 #[pyo3(signature = (seq_one, seq_two, score_matrix, indel_score=-1.0, gap_val=-1))]
 pub fn needleman_wunsch_with_score_matrix(
@@ -476,7 +476,7 @@ fn nw_score(
 /// two sequences, respectively.
 ///
 /// # References
-/// https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm
+/// <https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm>
 #[pyfunction]
 #[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
 pub fn hirschberg(
@@ -619,7 +619,7 @@ fn score_pair(
 /// This takes O(n) time and O(1) space complexity, where n is the length of the sequence.
 ///
 /// # References
-/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+/// <https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm>
 #[pyfunction]
 #[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
 pub fn alignment_score(

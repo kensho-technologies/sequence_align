@@ -3,7 +3,6 @@ import unittest
 
 from sequence_align.pairwise import alignment_score
 
-
 # Try something non-default
 DEFAULT_GAP = "?"
 

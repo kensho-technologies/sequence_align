@@ -3,7 +3,6 @@ import unittest
 
 from sequence_align.pairwise import needleman_wunsch_with_scores
 
-
 DEFAULT_GAP = "_"
 
 
