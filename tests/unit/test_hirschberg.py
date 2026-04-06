@@ -4,6 +4,7 @@ import unittest
 
 from sequence_align.pairwise import hirschberg
 
+
 DEFAULT_GAP = "-1"
 
 

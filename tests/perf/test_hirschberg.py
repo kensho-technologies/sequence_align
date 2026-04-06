@@ -7,6 +7,7 @@ from sequence_align.pairwise import hirschberg
 
 from .utils import create_seq_pair, get_expected_perf, max_memory_usage
 
+
 # Fix these so that we run with the same scores, even if defaults change
 MATCH_SCORE = 1.0
 MISMATCH_SCORE = -1.0

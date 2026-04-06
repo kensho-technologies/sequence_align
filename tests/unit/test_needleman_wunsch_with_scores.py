@@ -1,15 +1,21 @@
 # Copyright 2023-present Kensho Technologies, LLC.
+from typing import Any
 import unittest
 
 from sequence_align.pairwise import needleman_wunsch_with_scores
 
+
 DEFAULT_GAP = "_"
+
+
+def match_mismatch(a: Any, b: Any) -> float:
+    return 1.0 if a == b else -1.0
 
 
 class TestNeedlemanWunschWithScores(unittest.TestCase):
     def test_empty(self) -> None:
         aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
-            [], [], score_fn=lambda a, b: 1.0 if a == b else -1.0, gap=DEFAULT_GAP
+            [], [], score_fn=match_mismatch, gap=DEFAULT_GAP
         )
         self.assertEqual(len(aligned_seq_a), 0)
         self.assertEqual(len(aligned_seq_b), 0)
@@ -19,29 +25,26 @@ class TestNeedlemanWunschWithScores(unittest.TestCase):
         nonempty_aligned = ["A", "B", "C"]
         empty_aligned = [DEFAULT_GAP, DEFAULT_GAP, DEFAULT_GAP]
 
-        score_fn = lambda a, b: 1.0 if a == b else -1.0
-
         with self.subTest(msg="AB"):
             aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
-                nonempty, [], score_fn=score_fn, gap=DEFAULT_GAP
+                nonempty, [], score_fn=match_mismatch, gap=DEFAULT_GAP
             )
             self.assertEqual(aligned_seq_a, nonempty_aligned)
             self.assertEqual(aligned_seq_b, empty_aligned)
 
         with self.subTest(msg="BA"):
             aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
-                [], nonempty, score_fn=score_fn, gap=DEFAULT_GAP
+                [], nonempty, score_fn=match_mismatch, gap=DEFAULT_GAP
             )
             self.assertEqual(aligned_seq_a, empty_aligned)
             self.assertEqual(aligned_seq_b, nonempty_aligned)
 
     def test_invalid_gap(self) -> None:
-        score_fn = lambda a, b: 1.0 if a == b else -1.0
         for gap in ["A", "B", "C"]:
             with self.subTest(gap=gap):
                 with self.assertRaises(ValueError):
                     needleman_wunsch_with_scores(
-                        ["A", "B", "D"], ["A", "C", "D"], score_fn=score_fn, gap=gap
+                        ["A", "B", "D"], ["A", "C", "D"], score_fn=match_mismatch, gap=gap
                     )
 
     def test_identity_score_matches_standard_nw(self) -> None:
@@ -49,17 +52,13 @@ class TestNeedlemanWunschWithScores(unittest.TestCase):
         seq_a = ["G", "A", "T", "T", "A", "C", "A"]
         seq_b = ["G", "C", "A", "T", "G", "C", "G"]
 
-        match_score = 1.0
-        mismatch_score = -1.0
         indel_score = -1.0
-
-        score_fn = lambda a, b: match_score if a == b else mismatch_score
 
         exp_seq_a = ["G", DEFAULT_GAP, "A", "T", "T", "A", "C", "A"]
         exp_seq_b = ["G", "C", "A", DEFAULT_GAP, "T", "G", "C", "G"]
 
         aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
-            seq_a, seq_b, score_fn=score_fn, indel_score=indel_score, gap=DEFAULT_GAP
+            seq_a, seq_b, score_fn=match_mismatch, indel_score=indel_score, gap=DEFAULT_GAP
         )
         self.assertEqual(aligned_seq_a, exp_seq_a)
         self.assertEqual(aligned_seq_b, exp_seq_b)
@@ -165,18 +164,16 @@ class TestNeedlemanWunschWithScores(unittest.TestCase):
         large = ["A", "B", "C", "D"]
         small = ["C", "D"]
 
-        score_fn = lambda a, b: 1.0 if a == b else -1.0
-
         with self.subTest(msg="AB"):
             aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
-                large, small, score_fn=score_fn, indel_score=0.0, gap=DEFAULT_GAP
+                large, small, score_fn=match_mismatch, indel_score=0.0, gap=DEFAULT_GAP
             )
             self.assertEqual(aligned_seq_a, ["A", "B", "C", "D"])
             self.assertEqual(aligned_seq_b, [DEFAULT_GAP, DEFAULT_GAP, "C", "D"])
 
         with self.subTest(msg="BA"):
             aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
-                small, large, score_fn=score_fn, indel_score=0.0, gap=DEFAULT_GAP
+                small, large, score_fn=match_mismatch, indel_score=0.0, gap=DEFAULT_GAP
             )
             self.assertEqual(aligned_seq_a, [DEFAULT_GAP, DEFAULT_GAP, "C", "D"])
             self.assertEqual(aligned_seq_b, ["A", "B", "C", "D"])
