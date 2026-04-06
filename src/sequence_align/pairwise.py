@@ -1,7 +1,10 @@
 # Copyright 2023-present Kensho Technologies, LLC.
-from typing import Sequence
+from typing import Callable, Sequence, TypeVar
 
 from sequence_align import _sequence_align  # type: ignore
+
+
+T = TypeVar("T")
 
 
 _GAP_VAL = -1
@@ -97,6 +100,91 @@ def needleman_wunsch(
 
     # Finally, map back and return
     return _idx2entry(idx2symbol, seq_a_indices_aligned, seq_b_indices_aligned, gap)
+
+
+def needleman_wunsch_with_scores(
+    seq_a: Sequence[T],
+    seq_b: Sequence[T],
+    score_fn: Callable[[T, T], float],
+    indel_score: float = -1.0,
+    gap: T = "-",  # type: ignore[assignment]
+) -> tuple[list[T], list[T]]:
+    """Compute an optimal global pairwise alignment using Needleman-Wunsch with a custom score fn.
+
+    Unlike the standard ``needleman_wunsch`` which uses flat match/mismatch scores, this variant
+    accepts an arbitrary pairwise scoring function ``score_fn(a_i, b_j) -> float`` that is called
+    for every pair of elements. The Python wrapper precomputes the full score matrix and passes it
+    to the Rust implementation.
+
+    This is useful when alignment quality depends on continuous similarity measures (e.g., spatial
+    proximity, text edit distance, width compatibility) rather than binary equality.
+
+    Args:
+        seq_a: First sequence in pair to align.
+        seq_b: Second sequence in pair to align.
+        score_fn: A callable that takes one element from ``seq_a`` and one from ``seq_b`` and
+            returns a float score. Higher scores indicate better alignment between the two elements.
+        indel_score: Score to apply for insertion/deletion transitions where one sequence advances
+            without the other advancing (thus inserting a gap). Defaults to -1.
+        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
+            in ``seq_a`` and/or ``seq_b``. Defaults to ``"-"``.
+
+    Returns:
+        Sequences A and B, respectively, aligned to each other with gaps represented by ``gap``.
+
+    Raises:
+        ValueError: If ``gap`` is found in ``seq_a`` and/or ``seq_b``.
+
+    Note:
+        This takes O(mn) time and O(mn) space complexity, where m and n are the lengths of the two
+        sequences, respectively.
+
+        See https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm for more information.
+    """
+    if gap in seq_a or gap in seq_b:
+        raise ValueError(f'Gap entry "{gap}" found in seq_a and/or seq_b; must not exist in either')
+
+    seq_a_list = list(seq_a)
+    seq_b_list = list(seq_b)
+
+    if len(seq_a_list) == 0 and len(seq_b_list) == 0:
+        return ([], [])
+
+    # Build the integer encoding: assign each unique element an integer index.
+    # We map by object identity so that the score matrix indices stay aligned with the original
+    # elements even when elements compare equal but are different objects.
+    elem_to_idx: dict[int, int] = {}
+    idx_to_elem: dict[int, T] = {_GAP_VAL: gap}
+    next_idx = 0
+    for elem in seq_a_list + seq_b_list:
+        elem_id = id(elem)
+        if elem_id not in elem_to_idx:
+            elem_to_idx[elem_id] = next_idx
+            idx_to_elem[next_idx] = elem
+            next_idx += 1
+
+    seq_a_indices = [elem_to_idx[id(elem)] for elem in seq_a_list]
+    seq_b_indices = [elem_to_idx[id(elem)] for elem in seq_b_list]
+
+    # Precompute the full score matrix
+    score_matrix: list[list[float]] = [
+        [score_fn(a_elem, b_elem) for b_elem in seq_b_list] for a_elem in seq_a_list
+    ]
+
+    # Run alignment in Rust
+    aligned_a_indices, aligned_b_indices = _sequence_align.needleman_wunsch_with_score_matrix(
+        seq_a_indices,
+        seq_b_indices,
+        score_matrix,
+        indel_score=indel_score,
+        gap_val=_GAP_VAL,
+    )
+
+    # Map back to original elements
+    aligned_a: list[T] = [gap if idx == _GAP_VAL else idx_to_elem[idx] for idx in aligned_a_indices]
+    aligned_b: list[T] = [gap if idx == _GAP_VAL else idx_to_elem[idx] for idx in aligned_b_indices]
+
+    return (aligned_a, aligned_b)
 
 
 def hirschberg(

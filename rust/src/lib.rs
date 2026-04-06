@@ -200,6 +200,175 @@ pub fn needleman_wunsch(
     Ok((aligned_seq_one, aligned_seq_two))
 }
 
+/// Computes an optimal global pairwise alignment between two sequences of integers using the
+/// Needleman-Wunsch algorithm with a precomputed score matrix, and returns the corresponding
+/// aligned sequences, with any gaps represented by `gap_val`.
+///
+/// Unlike the standard `needleman_wunsch` function which uses binary match/mismatch scoring, this
+/// variant accepts a full `len(seq_one) x len(seq_two)` score matrix where `score_matrix[i][j]`
+/// gives the score for aligning `seq_one[i]` with `seq_two[j]`. This enables custom pairwise
+/// scoring functions (e.g., text similarity, spatial proximity) to be used in the alignment.
+///
+/// # Complexity
+/// This takes O(mn) time and O(mn) space complexity, where m and n are the lengths of the two
+/// sequences, respectively.
+///
+/// # References
+/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+#[pyfunction]
+#[pyo3(signature = (seq_one, seq_two, score_matrix, indel_score=-1.0, gap_val=-1))]
+pub fn needleman_wunsch_with_score_matrix(
+    seq_one: Vec<i64>,
+    seq_two: Vec<i64>,
+    score_matrix: Vec<Vec<f64>>,
+    indel_score: f64,
+    gap_val: i64,
+) -> PyResult<(Vec<i64>, Vec<i64>)> {
+    // Invariant -- gap_val cannot be in either sequence
+    if (seq_one.contains(&gap_val)) || (seq_two.contains(&gap_val)) {
+        return Err(PyValueError::new_err(
+            "Gap value {gap_val} cannot be present in either sequence",
+        ));
+    }
+
+    let seq_one_len = seq_one.len();
+    let seq_two_len = seq_two.len();
+
+    // Validate score matrix dimensions
+    if score_matrix.len() != seq_one_len {
+        return Err(PyValueError::new_err(
+            "score_matrix must have len(seq_one) rows",
+        ));
+    }
+    for (i, row) in score_matrix.iter().enumerate() {
+        if row.len() != seq_two_len {
+            return Err(PyValueError::new_err(format!(
+                "score_matrix row {i} has length {} but expected {seq_two_len}",
+                row.len()
+            )));
+        }
+    }
+
+    let minimum_seq_len = cmp::max(seq_one_len, seq_two_len);
+    let mut aligned_seq_one = Vec::<i64>::with_capacity(minimum_seq_len);
+    let mut aligned_seq_two = Vec::<i64>::with_capacity(minimum_seq_len);
+    if minimum_seq_len == 0 {
+        return Ok((aligned_seq_one, aligned_seq_two));
+    }
+
+    // NOTE: We do NOT swap sequences here (unlike the standard NW), because the score matrix
+    // is indexed as score_matrix[seq_one_idx][seq_two_idx] and swapping would invalidate that.
+    let num_rows = seq_one_len + 1;
+    let num_cols = seq_two_len + 1;
+
+    // Initialize score matrix with "border" cells
+    let mut scores: Vec<f64> = (0..num_rows)
+        .flat_map(|row_idx| {
+            (0..num_cols)
+                .map(|col_idx| {
+                    if row_idx == 0 {
+                        (col_idx as f64) * indel_score
+                    } else if col_idx == 0 {
+                        (row_idx as f64) * indel_score
+                    } else {
+                        0.0
+                    }
+                })
+                .collect::<Vec<f64>>()
+        })
+        .collect();
+
+    // Initialize backpointers matrix
+    let mut backpointers: Vec<usize> = (0..num_rows)
+        .flat_map(|row_idx| {
+            (0..num_cols)
+                .map(|col_idx| {
+                    if (row_idx == 0) && (col_idx > 0) {
+                        col_idx - 1
+                    } else if (col_idx == 0) && (row_idx > 0) {
+                        (row_idx - 1) * num_cols
+                    } else {
+                        0
+                    }
+                })
+                .collect::<Vec<usize>>()
+        })
+        .collect();
+
+    // Fill score matrix using the precomputed score matrix instead of match/mismatch
+    for row_idx in 1..num_rows {
+        let seq_one_idx = row_idx - 1;
+        for col_idx in 1..num_cols {
+            let cell_idx = (row_idx * num_cols) + col_idx;
+            let seq_two_idx = col_idx - 1;
+
+            // Use precomputed score instead of binary match/mismatch
+            let compare_score = score_matrix[seq_one_idx][seq_two_idx];
+
+            let diagonal_idx = cell_idx - num_cols - 1;
+            let diagonal_score = scores[diagonal_idx] + compare_score;
+
+            let up_idx = cell_idx - num_cols;
+            let up_score = scores[up_idx] + indel_score;
+
+            let left_idx = cell_idx - 1;
+            let left_score = scores[left_idx] + indel_score;
+
+            let (transition_score, transition_backpointer) =
+                if (diagonal_score >= up_score) && (diagonal_score >= left_score) {
+                    (diagonal_score, diagonal_idx)
+                } else if (left_score >= up_score) && (left_score >= diagonal_score) {
+                    (left_score, left_idx)
+                } else {
+                    (up_score, up_idx)
+                };
+            scores[cell_idx] = transition_score;
+            backpointers[cell_idx] = transition_backpointer;
+        }
+    }
+
+    // Backtrace to find the optimal alignment
+    let mut current_backpointer = (num_rows * num_cols) - 1;
+
+    while current_backpointer > 0 {
+        let current_bp_col_idx = current_backpointer % num_cols;
+        let current_bp_row_idx = (current_backpointer - current_bp_col_idx) / num_cols;
+
+        let next_backpointer = backpointers[current_backpointer];
+        let next_bp_col_idx = next_backpointer % num_cols;
+        let next_bp_row_idx = (next_backpointer - next_bp_col_idx) / num_cols;
+
+        if current_bp_row_idx == 0 {
+            aligned_seq_one.push(gap_val);
+        } else {
+            let current_seq_one_idx = current_bp_row_idx - 1;
+            if next_bp_row_idx == current_bp_row_idx {
+                aligned_seq_one.push(gap_val);
+            } else {
+                aligned_seq_one.push(seq_one[current_seq_one_idx]);
+            }
+        }
+
+        if current_bp_col_idx == 0 {
+            aligned_seq_two.push(gap_val);
+        } else {
+            let current_seq_two_idx = current_bp_col_idx - 1;
+            if next_bp_col_idx == current_bp_col_idx {
+                aligned_seq_two.push(gap_val);
+            } else {
+                aligned_seq_two.push(seq_two[current_seq_two_idx]);
+            }
+        }
+
+        current_backpointer = next_backpointer;
+    }
+
+    aligned_seq_one.reverse();
+    aligned_seq_two.reverse();
+
+    Ok((aligned_seq_one, aligned_seq_two))
+}
+
 // See NWScore() subroutine at https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm
 // Lower memory if seq_two is the SHORTER (or equal) of the two sequences.
 fn nw_score(
@@ -481,6 +650,7 @@ pub fn alignment_score(
 #[pymodule]
 fn _sequence_align(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(needleman_wunsch, m)?)?;
+    m.add_function(wrap_pyfunction!(needleman_wunsch_with_score_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hirschberg, m)?)?;
     m.add_function(wrap_pyfunction!(alignment_score, m)?)?;
     Ok(())
