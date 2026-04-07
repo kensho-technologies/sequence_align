@@ -3,6 +3,155 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::cmp;
 
+/// Core Needleman-Wunsch implementation parameterized by a scoring closure.
+///
+/// The `score_fn(row_idx, col_idx)` closure returns the pairwise score for aligning
+/// `seq_one[row_idx]` with `seq_two[col_idx]`. This is monomorphized at each call site, so the
+/// closure is inlined directly into the hot inner loop with zero runtime overhead.
+///
+/// Both `needleman_wunsch` and `needleman_wunsch_with_score_matrix` delegate to this function,
+/// differing only in the closure they pass.
+fn needleman_wunsch_core(
+    seq_one: &[i64],
+    seq_two: &[i64],
+    indel_score: f64,
+    gap_val: i64,
+    score_fn: impl Fn(usize, usize) -> f64,
+) -> (Vec<i64>, Vec<i64>) {
+    let seq_one_len = seq_one.len();
+    let seq_two_len = seq_two.len();
+
+    let minimum_seq_len = cmp::max(seq_one_len, seq_two_len);
+    let mut aligned_seq_one = Vec::<i64>::with_capacity(minimum_seq_len);
+    let mut aligned_seq_two = Vec::<i64>::with_capacity(minimum_seq_len);
+    if minimum_seq_len == 0 {
+        return (aligned_seq_one, aligned_seq_two);
+    }
+
+    let num_rows = seq_one_len + 1;
+    let num_cols = seq_two_len + 1;
+
+    // Initialize score matrix with "border" cells marked with indel penalties increasing from the
+    // origin
+    let mut scores: Vec<f64> = (0..num_rows)
+        .flat_map(|row_idx| {
+            (0..num_cols)
+                .map(|col_idx| {
+                    if row_idx == 0 {
+                        (col_idx as f64) * indel_score
+                    } else if col_idx == 0 {
+                        (row_idx as f64) * indel_score
+                    } else {
+                        0.0
+                    }
+                })
+                .collect::<Vec<f64>>()
+        })
+        .collect();
+
+    // Initialize backpointers matrix for tracing alignment later with "border" cells pointing to
+    // their neighbors, as these are only used if one sequence is fully exhausted before the other.
+    // These "backpointers" are simply indices (flattened row-col pairs) into the array. Once one
+    // reaches index 0 in backtracing, the sequence is complete.
+    let mut backpointers: Vec<usize> = (0..num_rows)
+        .flat_map(|row_idx| {
+            (0..num_cols)
+                .map(|col_idx| {
+                    if (row_idx == 0) && (col_idx > 0) {
+                        col_idx - 1
+                    } else if (col_idx == 0) && (row_idx > 0) {
+                        (row_idx - 1) * num_cols
+                    } else {
+                        0
+                    }
+                })
+                .collect::<Vec<usize>>()
+        })
+        .collect();
+
+    // Iterate row-by-row, calculating scores for each cell by comparing sequence values at the
+    // respective indices to determine the pairwise score, then adding an insertion-deletion
+    // (indel) score if moving left or up (not diagonally).
+    for row_idx in 1..num_rows {
+        let seq_one_idx = row_idx - 1;
+        for col_idx in 1..num_cols {
+            let cell_idx = (row_idx * num_cols) + col_idx;
+            let seq_two_idx = col_idx - 1;
+
+            let compare_score = score_fn(seq_one_idx, seq_two_idx);
+
+            // Score transitions from diagonal, up and left, then pick the best
+            let diagonal_idx = cell_idx - num_cols - 1;
+            let diagonal_score = scores[diagonal_idx] + compare_score;
+
+            let up_idx = cell_idx - num_cols;
+            let up_score = scores[up_idx] + indel_score;
+
+            let left_idx = cell_idx - 1;
+            let left_score = scores[left_idx] + indel_score;
+
+            let (transition_score, transition_backpointer) =
+                if (diagonal_score >= up_score) && (diagonal_score >= left_score) {
+                    // Diagonal is the best (or tied)
+                    (diagonal_score, diagonal_idx)
+                } else if (left_score >= up_score) && (left_score >= diagonal_score) {
+                    // Left is the best (or tied)
+                    (left_score, left_idx)
+                } else {
+                    // Up is the best (or tied)
+                    (up_score, up_idx)
+                };
+            scores[cell_idx] = transition_score;
+            backpointers[cell_idx] = transition_backpointer;
+        }
+    }
+
+    // Trace back the backpointers to find the optimal sequence, constructing the aligned
+    // sequences in the process.
+
+    // Start from bottom right corner
+    let mut current_backpointer = (num_rows * num_cols) - 1;
+
+    // Follow backpointers
+    while current_backpointer > 0 {
+        let current_bp_col_idx = current_backpointer % num_cols;
+        let current_bp_row_idx = (current_backpointer - current_bp_col_idx) / num_cols;
+
+        let next_backpointer = backpointers[current_backpointer];
+        let next_bp_col_idx = next_backpointer % num_cols;
+        let next_bp_row_idx = (next_backpointer - next_bp_col_idx) / num_cols;
+
+        if current_bp_row_idx == 0 {
+            aligned_seq_one.push(gap_val);
+        } else {
+            let current_seq_one_idx = current_bp_row_idx - 1;
+            if next_bp_row_idx == current_bp_row_idx {
+                aligned_seq_one.push(gap_val);
+            } else {
+                aligned_seq_one.push(seq_one[current_seq_one_idx]);
+            }
+        }
+
+        if current_bp_col_idx == 0 {
+            aligned_seq_two.push(gap_val);
+        } else {
+            let current_seq_two_idx = current_bp_col_idx - 1;
+            if next_bp_col_idx == current_bp_col_idx {
+                aligned_seq_two.push(gap_val);
+            } else {
+                aligned_seq_two.push(seq_two[current_seq_two_idx]);
+            }
+        }
+
+        current_backpointer = next_backpointer;
+    }
+
+    aligned_seq_one.reverse();
+    aligned_seq_two.reverse();
+
+    (aligned_seq_one, aligned_seq_two)
+}
+
 /// Computes an optimal global pairwise alignment between two sequences of integers using the
 /// Needleman-Wunsch algorithm and returns the corresponding aligned sequences, with any gaps
 /// represented by `gap_val`.
@@ -47,155 +196,25 @@ pub fn needleman_wunsch(
     } else {
         (false, seq_one, seq_two)
     };
-    let seq_one_proc_len = seq_one_proc.len();
-    let seq_two_proc_len = seq_two_proc.len();
 
-    let minimum_seq_len = cmp::max(seq_one_proc_len, seq_two_proc_len);
-    let mut aligned_seq_one_proc = Vec::<i64>::with_capacity(minimum_seq_len);
-    let mut aligned_seq_two_proc = Vec::<i64>::with_capacity(minimum_seq_len);
-    if minimum_seq_len == 0 {
-        // Both sequences empty -- no alignment needed
-        return Ok((aligned_seq_one_proc, aligned_seq_two_proc));
-    }
-
-    // Convenience aliases
-    let num_rows = seq_one_proc_len + 1;
-    let num_cols = seq_two_proc_len + 1;
-
-    // Initialize score matrix with "border" cells marked with indel penalties increasing from the
-    // origin
-    let mut scores: Vec<f64> = (0..num_rows)
-        .flat_map(|row_idx| {
-            (0..num_cols)
-                .map(|col_idx| {
-                    if row_idx == 0 {
-                        (col_idx as f64) * indel_score
-                    } else if col_idx == 0 {
-                        (row_idx as f64) * indel_score
-                    } else {
-                        0.0
-                    }
-                })
-                .collect::<Vec<f64>>()
-        })
-        .collect();
-
-    // Initialize backpointers matrix for tracing alignment later with "border" cells pointing to
-    // their neighbors, as these are only used if one sequence is fully exhausted before the other.
-    // These "backpointers" are simply indices (flattened row-col pairs) into the array. Once one
-    // reaches index 0 in backtracing, the sequence is complete.
-    let mut backpointers: Vec<usize> = (0..num_rows)
-        .flat_map(|row_idx| {
-            (0..num_cols)
-                .map(|col_idx| {
-                    if (row_idx == 0) && (col_idx > 0) {
-                        col_idx - 1
-                    } else if (col_idx == 0) && (row_idx > 0) {
-                        (row_idx - 1) * num_cols
-                    } else {
-                        0
-                    }
-                })
-                .collect::<Vec<usize>>()
-        })
-        .collect();
-
-    // Iterate row-by-row, calculating scores for each cell by comparing sequence values at the
-    // respective indices to determine if a match or mismatch, then adding an insertion-deletion
-    // (indel) score if moving left or up (not diagonally).
-    for row_idx in 1..num_rows {
-        let seq_one_proc_idx = row_idx - 1;
-        for col_idx in 1..num_cols {
-            let cell_idx = (row_idx * num_cols) + col_idx;
-
-            let seq_two_proc_idx = col_idx - 1;
-
-            // Check if match or mismatch
-            let compare_score = if seq_one_proc[seq_one_proc_idx] == seq_two_proc[seq_two_proc_idx]
-            {
+    let (mut aligned_seq_one, mut aligned_seq_two) = needleman_wunsch_core(
+        &seq_one_proc,
+        &seq_two_proc,
+        indel_score,
+        gap_val,
+        |i, j| {
+            if seq_one_proc[i] == seq_two_proc[j] {
                 match_score
             } else {
                 mismatch_score
-            };
-
-            // Now, score transitions from diagonal, up and left, then pick the best
-            let diagonal_idx = cell_idx - num_cols - 1;
-            let diagonal_score = scores[diagonal_idx] + compare_score;
-
-            let up_idx = cell_idx - num_cols;
-            let up_score = scores[up_idx] + indel_score;
-
-            let left_idx = cell_idx - 1;
-            let left_score = scores[left_idx] + indel_score;
-
-            let (transition_score, transition_backpointer) =
-                if (diagonal_score >= up_score) && (diagonal_score >= left_score) {
-                    // Diagonal is the best (or tied)
-                    (diagonal_score, diagonal_idx)
-                } else if (left_score >= up_score) && (left_score >= diagonal_score) {
-                    // Left is the best (or tied)
-                    (left_score, left_idx)
-                } else {
-                    // Up is the best (or tied)
-                    (up_score, up_idx)
-                };
-            scores[cell_idx] = transition_score;
-            backpointers[cell_idx] = transition_backpointer;
-        }
-    }
-
-    // Now, trace back the backpointers to find the optimal sequence, constructing the aligned
-    // sequences in the process. Preallocate to the longer of the two sequences, as it will be at
-    // least that long no matter what.
-
-    // Start from bottom right corner
-    let mut current_backpointer = (num_rows * num_cols) - 1;
-
-    // Follow backpointers
-    while current_backpointer > 0 {
-        let current_bp_col_idx = current_backpointer % num_cols;
-        let current_bp_row_idx = (current_backpointer - current_bp_col_idx) / num_cols;
-
-        let next_backpointer = backpointers[current_backpointer];
-        let next_bp_col_idx = next_backpointer % num_cols;
-        let next_bp_row_idx = (next_backpointer - next_bp_col_idx) / num_cols;
-
-        if current_bp_row_idx == 0 {
-            // Already exhausted sequence A -- add gap
-            aligned_seq_one_proc.push(gap_val);
-        } else {
-            let current_seq_one_proc_idx = current_bp_row_idx - 1;
-            if next_bp_row_idx == current_bp_row_idx {
-                aligned_seq_one_proc.push(gap_val);
-            } else {
-                aligned_seq_one_proc.push(seq_one_proc[current_seq_one_proc_idx]);
             }
-        }
+        },
+    );
 
-        if current_bp_col_idx == 0 {
-            // Already exhausted sequence B -- add gap
-            aligned_seq_two_proc.push(gap_val);
-        } else {
-            let current_seq_two_proc_idx = current_bp_col_idx - 1;
-            if next_bp_col_idx == current_bp_col_idx {
-                aligned_seq_two_proc.push(gap_val);
-            } else {
-                aligned_seq_two_proc.push(seq_two_proc[current_seq_two_proc_idx]);
-            }
-        }
-
-        current_backpointer = next_backpointer;
+    // Swap back if we swapped sequences for the column optimization
+    if swapped {
+        std::mem::swap(&mut aligned_seq_one, &mut aligned_seq_two);
     }
-
-    // Reverse sequence, swap back if needed, and return!
-    aligned_seq_one_proc.reverse();
-    aligned_seq_two_proc.reverse();
-
-    let (aligned_seq_one, aligned_seq_two) = if swapped {
-        (aligned_seq_two_proc, aligned_seq_one_proc)
-    } else {
-        (aligned_seq_one_proc, aligned_seq_two_proc)
-    };
 
     Ok((aligned_seq_one, aligned_seq_two))
 }
@@ -249,122 +268,15 @@ pub fn needleman_wunsch_with_score_matrix(
         }
     }
 
-    let minimum_seq_len = cmp::max(seq_one_len, seq_two_len);
-    let mut aligned_seq_one = Vec::<i64>::with_capacity(minimum_seq_len);
-    let mut aligned_seq_two = Vec::<i64>::with_capacity(minimum_seq_len);
-    if minimum_seq_len == 0 {
-        return Ok((aligned_seq_one, aligned_seq_two));
-    }
-
     // NOTE: We do NOT swap sequences here (unlike the standard NW), because the score matrix
     // is indexed as score_matrix[seq_one_idx][seq_two_idx] and swapping would invalidate that.
-    let num_rows = seq_one_len + 1;
-    let num_cols = seq_two_len + 1;
-
-    // Initialize score matrix with "border" cells
-    let mut scores: Vec<f64> = (0..num_rows)
-        .flat_map(|row_idx| {
-            (0..num_cols)
-                .map(|col_idx| {
-                    if row_idx == 0 {
-                        (col_idx as f64) * indel_score
-                    } else if col_idx == 0 {
-                        (row_idx as f64) * indel_score
-                    } else {
-                        0.0
-                    }
-                })
-                .collect::<Vec<f64>>()
-        })
-        .collect();
-
-    // Initialize backpointers matrix
-    let mut backpointers: Vec<usize> = (0..num_rows)
-        .flat_map(|row_idx| {
-            (0..num_cols)
-                .map(|col_idx| {
-                    if (row_idx == 0) && (col_idx > 0) {
-                        col_idx - 1
-                    } else if (col_idx == 0) && (row_idx > 0) {
-                        (row_idx - 1) * num_cols
-                    } else {
-                        0
-                    }
-                })
-                .collect::<Vec<usize>>()
-        })
-        .collect();
-
-    // Fill score matrix using the precomputed score matrix instead of match/mismatch
-    for row_idx in 1..num_rows {
-        let seq_one_idx = row_idx - 1;
-        for col_idx in 1..num_cols {
-            let cell_idx = (row_idx * num_cols) + col_idx;
-            let seq_two_idx = col_idx - 1;
-
-            // Use precomputed score instead of binary match/mismatch
-            let compare_score = score_matrix[seq_one_idx][seq_two_idx];
-
-            let diagonal_idx = cell_idx - num_cols - 1;
-            let diagonal_score = scores[diagonal_idx] + compare_score;
-
-            let up_idx = cell_idx - num_cols;
-            let up_score = scores[up_idx] + indel_score;
-
-            let left_idx = cell_idx - 1;
-            let left_score = scores[left_idx] + indel_score;
-
-            let (transition_score, transition_backpointer) =
-                if (diagonal_score >= up_score) && (diagonal_score >= left_score) {
-                    (diagonal_score, diagonal_idx)
-                } else if (left_score >= up_score) && (left_score >= diagonal_score) {
-                    (left_score, left_idx)
-                } else {
-                    (up_score, up_idx)
-                };
-            scores[cell_idx] = transition_score;
-            backpointers[cell_idx] = transition_backpointer;
-        }
-    }
-
-    // Backtrace to find the optimal alignment
-    let mut current_backpointer = (num_rows * num_cols) - 1;
-
-    while current_backpointer > 0 {
-        let current_bp_col_idx = current_backpointer % num_cols;
-        let current_bp_row_idx = (current_backpointer - current_bp_col_idx) / num_cols;
-
-        let next_backpointer = backpointers[current_backpointer];
-        let next_bp_col_idx = next_backpointer % num_cols;
-        let next_bp_row_idx = (next_backpointer - next_bp_col_idx) / num_cols;
-
-        if current_bp_row_idx == 0 {
-            aligned_seq_one.push(gap_val);
-        } else {
-            let current_seq_one_idx = current_bp_row_idx - 1;
-            if next_bp_row_idx == current_bp_row_idx {
-                aligned_seq_one.push(gap_val);
-            } else {
-                aligned_seq_one.push(seq_one[current_seq_one_idx]);
-            }
-        }
-
-        if current_bp_col_idx == 0 {
-            aligned_seq_two.push(gap_val);
-        } else {
-            let current_seq_two_idx = current_bp_col_idx - 1;
-            if next_bp_col_idx == current_bp_col_idx {
-                aligned_seq_two.push(gap_val);
-            } else {
-                aligned_seq_two.push(seq_two[current_seq_two_idx]);
-            }
-        }
-
-        current_backpointer = next_backpointer;
-    }
-
-    aligned_seq_one.reverse();
-    aligned_seq_two.reverse();
+    let (aligned_seq_one, aligned_seq_two) = needleman_wunsch_core(
+        &seq_one,
+        &seq_two,
+        indel_score,
+        gap_val,
+        |i, j| score_matrix[i][j],
+    );
 
     Ok((aligned_seq_one, aligned_seq_two))
 }

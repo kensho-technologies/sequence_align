@@ -13,19 +13,49 @@ set -e
 
 # Parse input arguments.
 any_run_only_set=0
-run_fast_linters=0  # copyright line check, ruff check, ruff format, cargo fmt
+run_copyright_check=0
+run_ruff_check=0
+run_ruff_format=0
+run_cargo_fmt=0
 run_mypy=0
 run_cargo_clippy=0
 fix=0
 for i in "$@"; do
     case $i in
-        --run-only-fast-linters )
+        --run-only-copyright-check )
             if [ "$any_run_only_set" -eq 1 ]; then
                 echo "Multiple run-only options set, this is not supported.";
                 exit 1;
             fi
             any_run_only_set=1
-            run_fast_linters=1
+            run_copyright_check=1
+            shift;;
+
+        --run-only-ruff-check )
+            if [ "$any_run_only_set" -eq 1 ]; then
+                echo "Multiple run-only options set, this is not supported.";
+                exit 1;
+            fi
+            any_run_only_set=1
+            run_ruff_check=1
+            shift;;
+
+        --run-only-ruff-format )
+            if [ "$any_run_only_set" -eq 1 ]; then
+                echo "Multiple run-only options set, this is not supported.";
+                exit 1;
+            fi
+            any_run_only_set=1
+            run_ruff_format=1
+            shift;;
+
+        --run-only-cargo-fmt )
+            if [ "$any_run_only_set" -eq 1 ]; then
+                echo "Multiple run-only options set, this is not supported.";
+                exit 1;
+            fi
+            any_run_only_set=1
+            run_cargo_fmt=1
             shift;;
 
         --run-only-mypy )
@@ -58,7 +88,10 @@ for i in "$@"; do
 done
 
 if [ "$any_run_only_set" -eq 0 ]; then
-    run_fast_linters=1
+    run_copyright_check=1
+    run_ruff_check=1
+    run_ruff_format=1
+    run_cargo_fmt=1
     run_mypy=1
     run_cargo_clippy=1
 fi
@@ -70,12 +103,14 @@ cd "$(git -C "$(dirname "${0}")" rev-parse --show-toplevel )"
 # Errors are manually aggregated at the end.
 set +e
 
-if [ "$run_fast_linters" -eq 1 ]; then
+if [ "$run_copyright_check" -eq 1 ]; then
     echo -e '*** Running copyright line check... ***\n'
     ./scripts/copyright_line_check.sh
     copyright_line_check_exit_code=$?
     echo -e "\n*** End of copyright line check run; exit: $copyright_line_check_exit_code ***\n"
+fi
 
+if [ "$run_ruff_check" -eq 1 ]; then
     echo -e '*** Running ruff check... ***\n'
     if [ "$fix" -eq 1 ]; then
         ruff check --fix .
@@ -85,7 +120,9 @@ if [ "$run_fast_linters" -eq 1 ]; then
         ruff_check_exit_code=$?
     fi
     echo -e "\n*** End of ruff check run; exit: $ruff_check_exit_code ***\n"
+fi
 
+if [ "$run_ruff_format" -eq 1 ]; then
     echo -e '*** Running ruff format... ***\n'
     if [ "$fix" -eq 1 ]; then
         ruff format .
@@ -95,7 +132,9 @@ if [ "$run_fast_linters" -eq 1 ]; then
         ruff_format_exit_code=$?
     fi
     echo -e "\n*** End of ruff format run; exit: $ruff_format_exit_code ***\n"
+fi
 
+if [ "$run_cargo_fmt" -eq 1 ]; then
     echo -e '\n*** Running cargo fmt...\n'
     if [ "$fix" -eq 1 ]; then
         cargo fmt -v --all --manifest-path=./rust/Cargo.toml
@@ -133,12 +172,13 @@ fi
 
 if  [[
         (
-            ("$run_fast_linters" == 1) && (
-                ("$copyright_line_check_exit_code" != "0") ||
-                ("$ruff_check_exit_code" != "0") ||
-                ("$ruff_format_exit_code" != "0") ||
-                ("$cargo_fmt_exit_code" != "0")
-            )
+            ("$run_copyright_check" == 1) && ("$copyright_line_check_exit_code" != "0")
+        ) || (
+            ("$run_ruff_check" == 1) && ("$ruff_check_exit_code" != "0")
+        ) || (
+            ("$run_ruff_format" == 1) && ("$ruff_format_exit_code" != "0")
+        ) || (
+            ("$run_cargo_fmt" == 1) && ("$cargo_fmt_exit_code" != "0")
         ) || (
             ("$run_mypy" == 1) && ("$mypy_exit_code" != "0")
         ) || (
@@ -147,10 +187,16 @@ if  [[
     ]]; then
     echo -e "\n*** Lint failed. ***\n"
 
-    if [ "$run_fast_linters" -eq 1 ]; then
+    if [ "$run_copyright_check" -eq 1 ]; then
         echo -e "copyright line check exit: $copyright_line_check_exit_code"
+    fi
+    if [ "$run_ruff_check" -eq 1 ]; then
         echo -e "ruff check exit: $ruff_check_exit_code"
+    fi
+    if [ "$run_ruff_format" -eq 1 ]; then
         echo -e "ruff format exit: $ruff_format_exit_code"
+    fi
+    if [ "$run_cargo_fmt" -eq 1 ]; then
         echo -e "cargo fmt exit: $cargo_fmt_exit_code"
     fi
     if [ "$run_mypy" -eq 1 ]; then
