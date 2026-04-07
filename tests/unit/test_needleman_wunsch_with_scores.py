@@ -95,9 +95,11 @@ class TestNeedlemanWunschWithScores(unittest.TestCase):
         aligned_seq_a, aligned_seq_b = needleman_wunsch_with_scores(
             seq_a, seq_b, score_fn=score_fn, indel_score=-1.0, gap=DEFAULT_GAP
         )
-        # Should match B:B and gap the rest rather than force A:X or C:Y mismatches
-        self.assertEqual(aligned_seq_a, ["A", "B", DEFAULT_GAP, "C"])
-        self.assertEqual(aligned_seq_b, [DEFAULT_GAP, "B", "Y", DEFAULT_GAP])
+        # Should match B:B and gap the rest rather than force A:X or C:Y mismatches.
+        # The algorithm's tie-breaking (diagonal > left > up) produces this 5-position
+        # alignment which also scores optimally: -1 + -1 + 10 + -1 + -1 = 6.
+        self.assertEqual(aligned_seq_a, ["A", DEFAULT_GAP, "B", "C", DEFAULT_GAP])
+        self.assertEqual(aligned_seq_b, [DEFAULT_GAP, "X", "B", DEFAULT_GAP, "Y"])
 
     def test_asymmetric_scores(self) -> None:
         """Test that asymmetric score functions are handled correctly."""
@@ -122,7 +124,7 @@ class TestNeedlemanWunschWithScores(unittest.TestCase):
         # vs: A:B (5) + B:A (-5) = 0
         # So A:B + gaps is best
         self.assertEqual(aligned_seq_a, ["A", "B", DEFAULT_GAP])
-        self.assertEqual(aligned_seq_b, [DEFAULT_GAP, "B", "A"])
+        self.assertEqual(aligned_seq_b, ["B", DEFAULT_GAP, "A"])
 
     def test_non_string_elements(self) -> None:
         """Test that non-string sequences work (the function is generic over T)."""
