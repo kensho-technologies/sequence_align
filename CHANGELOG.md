@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Update Python version support to 3.10-3.14 (drop 3.9, add 3.14).
-- Upgrade PyO3 from 0.20 to 0.28 and stable ABI minimum from Python 3.7 to 3.11.
+- Upgrade PyO3 from 0.20 to 0.28 and stable ABI minimum from Python 3.7 to 3.10.
 - Replace legacy linting toolchain (black, flake8, isort, pylint, pydocstyle, bandit) with ruff and mypy.
 
 ### Removed
