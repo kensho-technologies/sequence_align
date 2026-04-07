@@ -648,7 +648,7 @@ pub fn alignment_score(
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn _sequence_align(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _sequence_align(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(needleman_wunsch, m)?)?;
     m.add_function(wrap_pyfunction!(needleman_wunsch_with_score_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hirschberg, m)?)?;
