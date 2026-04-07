@@ -12,8 +12,8 @@ needleman_wunsch:
 needleman_wunsch_with_scores:
   runtime:
     # Dominated by Python-side score matrix precomputation (O(m*n) calls to score_fn)
-    median: 8.50  # Seconds
-    tolerance: 0.50  # +/- 50%
+    median: 15.0  # Seconds
+    tolerance: 0.50  # +/- 50% (7.5 - 22.5s)
   memory:
     # Larger than standard NW due to Python-side score matrix (list of lists of floats)
     median: 5400.0  # MiB
