@@ -15,7 +15,7 @@ RUNTIME_SEQ_A_LEN = 5_000
 RUNTIME_TRIALS = 3
 
 MEMORY_SEQ_A_LEN = 10_000
-MEMORY_TRIALS = 5
+MEMORY_TRIALS = 3
 
 
 def char_overlap_score(a: str, b: str) -> float:
