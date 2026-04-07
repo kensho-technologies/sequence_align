@@ -2,7 +2,7 @@
   <a href="https://codecov.io/gh/kensho-technologies/sequence_align"><img src="https://codecov.io/gh/kensho-technologies/sequence_align/branch/main/graph/badge.svg" /></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
   <a href="http://www.repostatus.org/#active"><img src="http://www.repostatus.org/badges/latest/active.svg" /></a>
-  <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" /></a>
 
 # sequence_align
 Efficient implementations of [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm)
@@ -139,6 +139,19 @@ print(aligned_words_a)
 
 # Expects ["hallo", "welt", "baz", "foo"]
 print(aligned_words_b)
+```
+
+## Development
+
+To set up a local development environment, ensure that both
+[Python](https://wiki.python.org/moin/BeginnersGuide/Download) and [Rust](https://www.rust-lang.org/tools/install)
+are installed, then:
+
+``` bash
+maturin develop -r  # build and install in the active Python environment
+./scripts/test.sh   # run tests via pytest
+./scripts/lint.sh   # run all linters (ruff, mypy, cargo fmt, cargo clippy)
+./scripts/lint.sh --fix  # auto-fix where possible
 ```
 
 ## Performance Benchmarks
