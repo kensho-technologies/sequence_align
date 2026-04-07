@@ -9,6 +9,15 @@ needleman_wunsch:
     # More consistent
     median: 1500.0  # MiB
     tolerance: 0.20  # +/- 20%
+needleman_wunsch_with_scores:
+  runtime:
+    # Dominated by Python-side score matrix precomputation (O(m*n) calls to score_fn)
+    median: 8.50  # Seconds
+    tolerance: 0.50  # +/- 50%
+  memory:
+    # Larger than standard NW due to Python-side score matrix (list of lists of floats)
+    median: 5400.0  # MiB
+    tolerance: 0.20  # +/- 20%
 hirschberg:
   runtime:
     # Generally more sensitive to machine/environment

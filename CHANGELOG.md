@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - `needleman_wunsch_with_scores()` function supporting custom pairwise scoring functions for alignment, enabling continuous similarity measures (e.g., spatial proximity, text edit distance) instead of binary match/mismatch.
+- Performance benchmark test for `needleman_wunsch_with_scores()` covering runtime and memory.
 - CHANGELOG.md and link from pyproject.toml for PyPI visibility.
 
 ### Changed
