@@ -51,8 +51,6 @@ dev = [
 # See https://www.maturin.rs/project_layout.html#import-rust-as-a-submodule-of-your-project
 # Allows "from sequence_align import _sequence_align" import
 module-name = "sequence_align._sequence_align"
-# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
-features = ["pyo3/extension-module"]
 
 [tool.ruff]
 line-length = 100
