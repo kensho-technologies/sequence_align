@@ -15,10 +15,6 @@ jobs:
     strategy:
       matrix:
         python-version: [3.14]
-        lint-flags:
-          - "--run-only-fast-linters"
-          - "--run-only-mypy"
-          - "--run-only-cargo-clippy"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
