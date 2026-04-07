@@ -270,13 +270,10 @@ pub fn needleman_wunsch_with_score_matrix(
 
     // NOTE: We do NOT swap sequences here (unlike the standard NW), because the score matrix
     // is indexed as score_matrix[seq_one_idx][seq_two_idx] and swapping would invalidate that.
-    let (aligned_seq_one, aligned_seq_two) = needleman_wunsch_core(
-        &seq_one,
-        &seq_two,
-        indel_score,
-        gap_val,
-        |i, j| score_matrix[i][j],
-    );
+    let (aligned_seq_one, aligned_seq_two) =
+        needleman_wunsch_core(&seq_one, &seq_two, indel_score, gap_val, |i, j| {
+            score_matrix[i][j]
+        });
 
     Ok((aligned_seq_one, aligned_seq_two))
 }

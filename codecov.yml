@@ -6,4 +6,4 @@ coverage:
         threshold: 0.03%
         base: auto
 comment:
-  after_n_builds: 8 # Prevent early, spurious Codecov reports before all tests finish. 8 is calculated from the number of jobs: 3 lint jobs + 5 test jobs (1 per python-version).
+  after_n_builds: 11 # Prevent early, spurious Codecov reports before all tests finish. 11 is calculated from the number of jobs: 1 lint job + 10 test jobs (1 per python-version and unit/perf).
