@@ -40,10 +40,10 @@ class TestNeedlemanWunsch(unittest.TestCase):
             needleman_wunsch(
                 seq_a,
                 seq_b,
+                DEFAULT_GAP,
                 match_score=MATCH_SCORE,
                 mismatch_score=MISMATCH_SCORE,
                 indel_score=INDEL_SCORE,
-                gap=DEFAULT_GAP,
             )
             end_t = time.perf_counter()
             runtimes.append(end_t - start_t)
@@ -71,12 +71,11 @@ Consider adjusting the median number and/or tolerance if this change in performa
         for _ in range(MEMORY_TRIALS):
             max_mem = max_memory_usage(
                 needleman_wunsch,
-                (seq_a, seq_b),
+                (seq_a, seq_b, DEFAULT_GAP),
                 {
                     "match_score": MATCH_SCORE,
                     "mismatch_score": MISMATCH_SCORE,
                     "indel_score": INDEL_SCORE,
-                    "gap": DEFAULT_GAP,
                 },
             )
             max_mems.append(max_mem)

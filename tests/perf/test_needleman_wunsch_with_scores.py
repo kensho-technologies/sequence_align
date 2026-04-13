@@ -46,9 +46,9 @@ class TestNeedlemanWunschWithScores(unittest.TestCase):
             needleman_wunsch_with_scores(
                 seq_a,
                 seq_b,
-                score_fn=char_overlap_score,
+                DEFAULT_GAP,
+                char_overlap_score,
                 indel_score=INDEL_SCORE,
-                gap=DEFAULT_GAP,
             )
             end_t = time.perf_counter()
             runtimes.append(end_t - start_t)
@@ -76,12 +76,8 @@ Consider adjusting the median number and/or tolerance if this change in performa
         for _ in range(MEMORY_TRIALS):
             max_mem = max_memory_usage(
                 needleman_wunsch_with_scores,
-                (seq_a, seq_b),
-                {
-                    "score_fn": char_overlap_score,
-                    "indel_score": INDEL_SCORE,
-                    "gap": DEFAULT_GAP,
-                },
+                (seq_a, seq_b, DEFAULT_GAP, char_overlap_score),
+                {"indel_score": INDEL_SCORE},
             )
             max_mems.append(max_mem)
 

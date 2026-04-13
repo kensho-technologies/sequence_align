@@ -57,10 +57,10 @@ seq_b = ["G", "C", "A", "T", "G", "C", "G"]
 aligned_seq_a, aligned_seq_b = needleman_wunsch(
     seq_a,
     seq_b,
+    "_",  # Represent gaps with this value
     match_score=1.0,
     mismatch_score=-1.0,
     indel_score=-1.0,
-    gap="_",
 )
 
 # Expects ["G", "_", "A", "T", "T", "A", "C", "A"]
@@ -73,10 +73,10 @@ print(aligned_seq_b)
 score = alignment_score(
     aligned_seq_a,
     aligned_seq_b,
+    "_",
     match_score=1.0,
     mismatch_score=-1.0,
     indel_score=-1.0,
-    gap="_",
 )
 print(score)
 
@@ -88,10 +88,10 @@ seq_b = ["T", "A", "T", "G", "C"]
 aligned_seq_a, aligned_seq_b = hirschberg(
     seq_a,
     seq_b,
+    "_",
     match_score=2.0,
     mismatch_score=-1.0,
     indel_score=-2.0,
-    gap="_",
 )
 
 # Expects ["A", "G", "T", "A", "C", "G", "C", "A"]
@@ -104,10 +104,10 @@ print(aligned_seq_b)
 score = alignment_score(
     aligned_seq_a,
     aligned_seq_b,
+    "_",
     match_score=2.0,
     mismatch_score=-1.0,
     indel_score=-2.0,
-    gap="_",
 )
 print(score)
 
@@ -129,9 +129,9 @@ def char_overlap_score(a: str, b: str) -> float:
 aligned_words_a, aligned_words_b = needleman_wunsch_with_scores(
     words_a,
     words_b,
+    "_",
     score_fn=char_overlap_score,
     indel_score=-1.0,
-    gap="_",
 )
 
 # Expects ["hello", "world", "_", "foo"]

@@ -48,24 +48,24 @@ def _idx2entry(
 def needleman_wunsch(
     seq_a: Sequence[str],
     seq_b: Sequence[str],
+    gap: str,
     match_score: float = 1.0,
     mismatch_score: float = -1.0,
     indel_score: float = -1.0,
-    gap: str = "-",
 ) -> tuple[list[str], list[str]]:
     """Compute an optimal global pairwise alignment using the Needleman-Wunsch algorithm.
 
     Args:
         seq_a: First sequence in pair to align.
         seq_b: Second sequence in pair to align.
+        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
+            in `seq_a` and/or `seq_b`.
         match_score: Score to apply for transitions where the sequences match each other at a given
             index. Defaults to 1.
         mismatch_score: Score to apply for transitions where the sequences do _not_ match each other
             at a given index. Defaults to -1.
         indel_score: Score to apply for insertion/deletion transitions where one sequence advances
             without the other advancing (thus inserting a gap). Defaults to -1.
-        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
-            in `seq_a` and/or `seq_b`. Defaults to "-".
 
     Returns:
         Sequences A and B, respectively, aligned to each other with gaps represented by `gap`.
@@ -106,9 +106,9 @@ def needleman_wunsch(
 def needleman_wunsch_with_scores(
     seq_a: Sequence[T],
     seq_b: Sequence[T],
+    gap: T,
     score_fn: Callable[[T, T], float],
     indel_score: float = -1.0,
-    gap: T = "-",  # type: ignore[assignment]
 ) -> tuple[list[T], list[T]]:
     """Compute an optimal global pairwise alignment using Needleman-Wunsch with a custom score fn.
 
@@ -123,12 +123,12 @@ def needleman_wunsch_with_scores(
     Args:
         seq_a: First sequence in pair to align.
         seq_b: Second sequence in pair to align.
+        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
+            in ``seq_a`` and/or ``seq_b``.
         score_fn: A callable that takes one element from ``seq_a`` and one from ``seq_b`` and
             returns a float score. Higher scores indicate better alignment between the two elements.
         indel_score: Score to apply for insertion/deletion transitions where one sequence advances
             without the other advancing (thus inserting a gap). Defaults to -1.
-        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
-            in ``seq_a`` and/or ``seq_b``. Defaults to ``"-"``.
 
     Returns:
         Sequences A and B, respectively, aligned to each other with gaps represented by ``gap``.
@@ -191,24 +191,24 @@ def needleman_wunsch_with_scores(
 def hirschberg(
     seq_a: Sequence[str],
     seq_b: Sequence[str],
+    gap: str,
     match_score: float = 1.0,
     mismatch_score: float = -1.0,
     indel_score: float = -1.0,
-    gap: str = "-",
 ) -> tuple[list[str], list[str]]:
     """Compute an optimal global pairwise alignment using the Hirschberg algorithm.
 
     Args:
         seq_a: First sequence in pair to align.
         seq_b: Second sequence in pair to align.
+        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
+            in `seq_a` and/or `seq_b`.
         match_score: Score to apply for transitions where the sequences match each other at a given
             index. Defaults to 1.
         mismatch_score: Score to apply for transitions where the sequences do _not_ match each other
             at a given index. Defaults to -1.
         indel_score: Score to apply for insertion/deletion transitions where one sequence advances
             without the other advancing (thus inserting a gap). Defaults to -1.
-        gap: Value to use for marking a gap in one sequence in the final output. Cannot be present
-            in `seq_a` and/or `seq_b`. Defaults to "-".
 
     Returns:
         Sequences A and B, respectively, aligned to each other with gaps represented by `gap`.
@@ -254,23 +254,23 @@ def hirschberg(
 def alignment_score(
     aligned_seq_a: Sequence[str],
     aligned_seq_b: Sequence[str],
+    gap: str,
     match_score: float = 1.0,
     mismatch_score: float = -1.0,
     indel_score: float = -1.0,
-    gap: str = "-",
 ) -> float:
     """Compute the alignment score for the pair of sequences.
 
     Args:
         aligned_seq_a: First aligned sequence.
         aligned_seq_b: Second aligned sequence.
+        gap: Value used for marking gaps in the aligned sequences.
         match_score: Score to apply for transitions where the sequences match each other at a given
             index. Defaults to 1.
         mismatch_score: Score to apply for transitions where the sequences do _not_ match each other
             at a given index. Defaults to -1.
         indel_score: Score to apply for insertion/deletion transitions where one sequence advances
             without the other advancing (thus inserting a gap). Defaults to -1.
-        gap: Value to use for marking gaps in the aligned sequences. Defaults to "-".
 
     Returns:
         Needleman-Wunsch alignment score representing the sum of match, mismatch and
