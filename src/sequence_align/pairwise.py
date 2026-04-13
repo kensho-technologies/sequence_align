@@ -151,26 +151,15 @@ def needleman_wunsch_with_scores(
     if len(seq_a_list) == 0 and len(seq_b_list) == 0:
         return ([], [])
 
-    # Build the integer encoding: assign each unique element an integer index.
-    # We map by object identity so that the score matrix indices stay aligned with the original
-    # elements even when elements compare equal but are different objects.
-    elem_to_idx: dict[int, int] = {}
-    idx_to_elem: dict[int, T] = {_GAP_VAL: gap}
-    next_idx = 0
-    for elem in seq_a_list + seq_b_list:
-        elem_id = id(elem)
-        if elem_id not in elem_to_idx:
-            elem_to_idx[elem_id] = next_idx
-            idx_to_elem[next_idx] = elem
-            next_idx += 1
-
-    seq_a_indices = [elem_to_idx[id(elem)] for elem in seq_a_list]
-    seq_b_indices = [elem_to_idx[id(elem)] for elem in seq_b_list]
-
     # Precompute the full score matrix
     score_matrix: list[list[float]] = [
         [score_fn(a_elem, b_elem) for b_elem in seq_b_list] for a_elem in seq_a_list
     ]
+
+    # Use element indices instead of values so that the score matrix indices stay aligned with the
+    # original elements even when elements compare equal but are different objects.
+    seq_a_indices = list(range(len(seq_a_list)))
+    seq_b_indices = list(range(len(seq_b_list)))
 
     # Run alignment in Rust
     aligned_a_indices, aligned_b_indices = _sequence_align.needleman_wunsch_with_score_matrix(
@@ -182,8 +171,8 @@ def needleman_wunsch_with_scores(
     )
 
     # Map back to original elements
-    aligned_a: list[T] = [gap if idx == _GAP_VAL else idx_to_elem[idx] for idx in aligned_a_indices]
-    aligned_b: list[T] = [gap if idx == _GAP_VAL else idx_to_elem[idx] for idx in aligned_b_indices]
+    aligned_a: list[T] = [gap if idx == _GAP_VAL else seq_a_list[idx] for idx in aligned_a_indices]
+    aligned_b: list[T] = [gap if idx == _GAP_VAL else seq_b_list[idx] for idx in aligned_b_indices]
 
     return (aligned_a, aligned_b)
 
