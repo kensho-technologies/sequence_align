@@ -40,10 +40,10 @@ class TestHirschberg(unittest.TestCase):
             hirschberg(
                 seq_a,
                 seq_b,
+                DEFAULT_GAP,
                 match_score=MATCH_SCORE,
                 mismatch_score=MISMATCH_SCORE,
                 indel_score=INDEL_SCORE,
-                gap=DEFAULT_GAP,
             )
             end_t = time.perf_counter()
             runtimes.append(end_t - start_t)
@@ -58,8 +58,8 @@ class TestHirschberg(unittest.TestCase):
         self.assertLessEqual(
             abs(diff_pct),
             tolerance,
-            msg=f"""Expected runtime to be within {tolerance * 100.}% of {exp_median:.3f}s.
-Got {median_runtime:.3f}s ({sign}{100. * diff_pct}%) instead.
+            msg=f"""Expected runtime to be within {tolerance * 100.0}% of {exp_median:.3f}s.
+Got {median_runtime:.3f}s ({sign}{100.0 * diff_pct}%) instead.
 
 Consider adjusting the median number and/or tolerance if this change in performance is expected.""",
         )
@@ -71,12 +71,11 @@ Consider adjusting the median number and/or tolerance if this change in performa
         for _ in range(MEMORY_TRIALS):
             max_mem = max_memory_usage(
                 hirschberg,
-                (seq_a, seq_b),
+                (seq_a, seq_b, DEFAULT_GAP),
                 {
                     "match_score": MATCH_SCORE,
                     "mismatch_score": MISMATCH_SCORE,
                     "indel_score": INDEL_SCORE,
-                    "gap": DEFAULT_GAP,
                 },
             )
             max_mems.append(max_mem)
@@ -91,8 +90,8 @@ Consider adjusting the median number and/or tolerance if this change in performa
         self.assertLessEqual(
             abs(diff_pct),
             tolerance,
-            msg=f"""Expected memory to be within {tolerance * 100.}% of {exp_median:.3f}MiB.
-Got {median_max_mem:.3f}MiB ({sign}{100. * diff_pct}%) instead.
+            msg=f"""Expected memory to be within {tolerance * 100.0}% of {exp_median:.3f}MiB.
+Got {median_max_mem:.3f}MiB ({sign}{100.0 * diff_pct}%) instead.
 
 Consider adjusting the median number and/or tolerance if this change in performance is expected.""",
         )

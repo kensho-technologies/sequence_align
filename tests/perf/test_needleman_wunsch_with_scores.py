@@ -3,25 +3,31 @@ import time
 from typing import Any
 import unittest
 
-from sequence_align.pairwise import needleman_wunsch
+from sequence_align.pairwise import needleman_wunsch_with_scores
 
 from .utils import create_seq_pair, get_expected_perf, max_memory_usage
 
 
-# Fix these so that we run with the same scores, even if defaults change
-MATCH_SCORE = 1.0
-MISMATCH_SCORE = -1.0
 INDEL_SCORE = -1.0
 DEFAULT_GAP = "_"
 
 RUNTIME_SEQ_A_LEN = 5_000
-RUNTIME_TRIALS = 9
+RUNTIME_TRIALS = 3
 
 MEMORY_SEQ_A_LEN = 10_000
-MEMORY_TRIALS = 5
+MEMORY_TRIALS = 3
 
 
-class TestNeedlemanWunsch(unittest.TestCase):
+def char_overlap_score(a: str, b: str) -> float:
+    """Score based on character set overlap — a continuous similarity measure."""
+    if a == b:
+        return 2.0
+    shared = len(set(a) & set(b))
+    total = len(set(a) | set(b))
+    return (2.0 * shared / total) - 1.0 if total > 0 else -1.0
+
+
+class TestNeedlemanWunschWithScores(unittest.TestCase):
     # Needed for mypy to not complain
     expected_perf: dict[str, Any] = dict()
 
@@ -29,7 +35,7 @@ class TestNeedlemanWunsch(unittest.TestCase):
     def setUpClass(cls) -> None:
         super().setUpClass()
 
-        cls.expected_perf = get_expected_perf("needleman_wunsch")
+        cls.expected_perf = get_expected_perf("needleman_wunsch_with_scores")
 
     def test_runtime(self) -> None:
         seq_a, seq_b = create_seq_pair(RUNTIME_SEQ_A_LEN)
@@ -37,12 +43,11 @@ class TestNeedlemanWunsch(unittest.TestCase):
         runtimes = list()
         for _ in range(RUNTIME_TRIALS):
             start_t = time.perf_counter()
-            needleman_wunsch(
+            needleman_wunsch_with_scores(
                 seq_a,
                 seq_b,
                 DEFAULT_GAP,
-                match_score=MATCH_SCORE,
-                mismatch_score=MISMATCH_SCORE,
+                char_overlap_score,
                 indel_score=INDEL_SCORE,
             )
             end_t = time.perf_counter()
@@ -70,13 +75,9 @@ Consider adjusting the median number and/or tolerance if this change in performa
         max_mems = list()
         for _ in range(MEMORY_TRIALS):
             max_mem = max_memory_usage(
-                needleman_wunsch,
-                (seq_a, seq_b, DEFAULT_GAP),
-                {
-                    "match_score": MATCH_SCORE,
-                    "mismatch_score": MISMATCH_SCORE,
-                    "indel_score": INDEL_SCORE,
-                },
+                needleman_wunsch_with_scores,
+                (seq_a, seq_b, DEFAULT_GAP, char_overlap_score),
+                {"indel_score": INDEL_SCORE},
             )
             max_mems.append(max_mem)
 

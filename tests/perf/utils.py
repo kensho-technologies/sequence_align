@@ -1,8 +1,9 @@
 # Copyright 2023-present Kensho Technologies, LLC.
+from collections.abc import Callable
 import multiprocessing as mp
 import os
 import random
-from typing import Any, Callable
+from typing import Any
 
 import psutil
 import yaml
@@ -57,7 +58,7 @@ def create_seq_pair(seq_a_len: int) -> tuple[list[str], list[str]]:
 
 def get_expected_perf(key: str) -> Any:
     """Load the expected performance dictionary for the provided key."""
-    with open(EXPECTED_PERF_YML, "r") as fd:
+    with open(EXPECTED_PERF_YML) as fd:
         expected_perf_full = yaml.safe_load(fd)
     return expected_perf_full[key]
 

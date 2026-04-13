@@ -11,12 +11,12 @@ DEFAULT_GAP = "?"
 class TestAlignmentScore(unittest.TestCase):
     def test_empty(self) -> None:
         """Score of two empty sequences should always be zero."""
-        self.assertEqual(alignment_score([], []), 0)
+        self.assertEqual(alignment_score([], [], DEFAULT_GAP), 0)
 
     def test_unequal(self) -> None:
         """Should fail with sequences of different length."""
         with self.assertRaises(ValueError):
-            alignment_score(["A", "B", "C"], ["D", "E"])
+            alignment_score(["A", "B", "C"], ["D", "E"], DEFAULT_GAP)
 
     def test_normal(self) -> None:
         """Score of two nonempty sequences should match and in both directions."""
@@ -37,10 +37,10 @@ class TestAlignmentScore(unittest.TestCase):
                     alignment_score(
                         seq_a_proc,
                         seq_b_proc,
+                        DEFAULT_GAP,
                         match_score=match_score,
                         mismatch_score=mismatch_score,
                         indel_score=indel_score,
-                        gap=DEFAULT_GAP,
                     ),
                     expected_score,
                 )

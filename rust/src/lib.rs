@@ -3,64 +3,33 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::cmp;
 
-/// Computes an optimal global pairwise alignment between two sequences of integers using the
-/// Needleman-Wunsch algorithm and returns the corresponding aligned sequences, with any gaps
-/// represented by `gap_val`.
+/// Core Needleman-Wunsch implementation parameterized by a scoring closure.
 ///
-/// # Notes
-/// Unlike other implementations, this only considers a **single backpointer** when backtracing the
-/// optimal pairwise alignment, rather than potentially two or three backpointers for each cell if
-/// the scores are equal. Rather, this will prioritize "up" transitions (*i.e.*, gap in `seq_two`)
-/// over "left" transitions (*i.e.*, gap in `seq_one`), which in turn is prioritized over "diagonal"
-/// transitions (*i.e.*, no gap). This is a somewhat arbitrary distinction, but is consistent and
-/// leads to a simpler implementation that is both faster and uses less memory.
+/// The `score_fn(row_idx, col_idx)` closure returns the pairwise score for aligning
+/// `seq_one[row_idx]` with `seq_two[col_idx]`. This is monomorphized at each call site, so the
+/// closure is inlined directly into the hot inner loop with zero runtime overhead.
 ///
-/// # Complexity
-/// This takes O(mn) time and O(mn) space complexity, where m and n are the lengths of the two
-/// sequences, respectively.
-///
-/// # References
-/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
-#[pyfunction]
-#[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
-pub fn needleman_wunsch(
-    seq_one: Vec<i64>,
-    seq_two: Vec<i64>,
-    match_score: f64,
-    mismatch_score: f64,
+/// Both `needleman_wunsch` and `needleman_wunsch_with_score_matrix` delegate to this function,
+/// differing only in the closure they pass.
+fn needleman_wunsch_core(
+    seq_one: &[i64],
+    seq_two: &[i64],
     indel_score: f64,
     gap_val: i64,
-) -> PyResult<(Vec<i64>, Vec<i64>)> {
-    // Invariant -- gap_val cannot be in either sequence
-    if (seq_one.contains(&gap_val)) || (seq_two.contains(&gap_val)) {
-        return Err(PyValueError::new_err(
-            "Gap value {gap_val} cannot be present in either sequence",
-        ));
-    }
-
-    // Use the shorter of the two sequences for the column dimension so that there's less memory
-    // fragmentation
+    score_fn: impl Fn(usize, usize) -> f64,
+) -> (Vec<i64>, Vec<i64>) {
     let seq_one_len = seq_one.len();
     let seq_two_len = seq_two.len();
-    let (swapped, seq_one_proc, seq_two_proc) = if seq_two_len > seq_one_len {
-        (true, seq_two, seq_one)
-    } else {
-        (false, seq_one, seq_two)
-    };
-    let seq_one_proc_len = seq_one_proc.len();
-    let seq_two_proc_len = seq_two_proc.len();
 
-    let minimum_seq_len = cmp::max(seq_one_proc_len, seq_two_proc_len);
-    let mut aligned_seq_one_proc = Vec::<i64>::with_capacity(minimum_seq_len);
-    let mut aligned_seq_two_proc = Vec::<i64>::with_capacity(minimum_seq_len);
+    let minimum_seq_len = cmp::max(seq_one_len, seq_two_len);
+    let mut aligned_seq_one = Vec::<i64>::with_capacity(minimum_seq_len);
+    let mut aligned_seq_two = Vec::<i64>::with_capacity(minimum_seq_len);
     if minimum_seq_len == 0 {
-        // Both sequences empty -- no alignment needed
-        return Ok((aligned_seq_one_proc, aligned_seq_two_proc));
+        return (aligned_seq_one, aligned_seq_two);
     }
 
-    // Convenience aliases
-    let num_rows = seq_one_proc_len + 1;
-    let num_cols = seq_two_proc_len + 1;
+    let num_rows = seq_one_len + 1;
+    let num_cols = seq_two_len + 1;
 
     // Initialize score matrix with "border" cells marked with indel penalties increasing from the
     // origin
@@ -101,24 +70,17 @@ pub fn needleman_wunsch(
         .collect();
 
     // Iterate row-by-row, calculating scores for each cell by comparing sequence values at the
-    // respective indices to determine if a match or mismatch, then adding an insertion-deletion
+    // respective indices to determine the pairwise score, then adding an insertion-deletion
     // (indel) score if moving left or up (not diagonally).
     for row_idx in 1..num_rows {
-        let seq_one_proc_idx = row_idx - 1;
+        let seq_one_idx = row_idx - 1;
         for col_idx in 1..num_cols {
             let cell_idx = (row_idx * num_cols) + col_idx;
+            let seq_two_idx = col_idx - 1;
 
-            let seq_two_proc_idx = col_idx - 1;
+            let compare_score = score_fn(seq_one_idx, seq_two_idx);
 
-            // Check if match or mismatch
-            let compare_score = if seq_one_proc[seq_one_proc_idx] == seq_two_proc[seq_two_proc_idx]
-            {
-                match_score
-            } else {
-                mismatch_score
-            };
-
-            // Now, score transitions from diagonal, up and left, then pick the best
+            // Score transitions from diagonal, up and left, then pick the best
             let diagonal_idx = cell_idx - num_cols - 1;
             let diagonal_score = scores[diagonal_idx] + compare_score;
 
@@ -144,9 +106,8 @@ pub fn needleman_wunsch(
         }
     }
 
-    // Now, trace back the backpointers to find the optimal sequence, constructing the aligned
-    // sequences in the process. Preallocate to the longer of the two sequences, as it will be at
-    // least that long no matter what.
+    // Trace back the backpointers to find the optimal sequence, constructing the aligned
+    // sequences in the process.
 
     // Start from bottom right corner
     let mut current_backpointer = (num_rows * num_cols) - 1;
@@ -161,41 +122,158 @@ pub fn needleman_wunsch(
         let next_bp_row_idx = (next_backpointer - next_bp_col_idx) / num_cols;
 
         if current_bp_row_idx == 0 {
-            // Already exhausted sequence A -- add gap
-            aligned_seq_one_proc.push(gap_val);
+            aligned_seq_one.push(gap_val);
         } else {
-            let current_seq_one_proc_idx = current_bp_row_idx - 1;
+            let current_seq_one_idx = current_bp_row_idx - 1;
             if next_bp_row_idx == current_bp_row_idx {
-                aligned_seq_one_proc.push(gap_val);
+                aligned_seq_one.push(gap_val);
             } else {
-                aligned_seq_one_proc.push(seq_one_proc[current_seq_one_proc_idx]);
+                aligned_seq_one.push(seq_one[current_seq_one_idx]);
             }
         }
 
         if current_bp_col_idx == 0 {
-            // Already exhausted sequence B -- add gap
-            aligned_seq_two_proc.push(gap_val);
+            aligned_seq_two.push(gap_val);
         } else {
-            let current_seq_two_proc_idx = current_bp_col_idx - 1;
+            let current_seq_two_idx = current_bp_col_idx - 1;
             if next_bp_col_idx == current_bp_col_idx {
-                aligned_seq_two_proc.push(gap_val);
+                aligned_seq_two.push(gap_val);
             } else {
-                aligned_seq_two_proc.push(seq_two_proc[current_seq_two_proc_idx]);
+                aligned_seq_two.push(seq_two[current_seq_two_idx]);
             }
         }
 
         current_backpointer = next_backpointer;
     }
 
-    // Reverse sequence, swap back if needed, and return!
-    aligned_seq_one_proc.reverse();
-    aligned_seq_two_proc.reverse();
+    aligned_seq_one.reverse();
+    aligned_seq_two.reverse();
 
-    let (aligned_seq_one, aligned_seq_two) = if swapped {
-        (aligned_seq_two_proc, aligned_seq_one_proc)
+    (aligned_seq_one, aligned_seq_two)
+}
+
+/// Computes an optimal global pairwise alignment between two sequences of integers using the
+/// Needleman-Wunsch algorithm and returns the corresponding aligned sequences, with any gaps
+/// represented by `gap_val`.
+///
+/// # Notes
+/// Unlike other implementations, this only considers a **single backpointer** when backtracing the
+/// optimal pairwise alignment, rather than potentially two or three backpointers for each cell if
+/// the scores are equal. Rather, this will prioritize "up" transitions (*i.e.*, gap in `seq_two`)
+/// over "left" transitions (*i.e.*, gap in `seq_one`), which in turn is prioritized over "diagonal"
+/// transitions (*i.e.*, no gap). This is a somewhat arbitrary distinction, but is consistent and
+/// leads to a simpler implementation that is both faster and uses less memory.
+///
+/// # Complexity
+/// This takes O(mn) time and O(mn) space complexity, where m and n are the lengths of the two
+/// sequences, respectively.
+///
+/// # References
+/// <https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm>
+#[pyfunction]
+#[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
+pub fn needleman_wunsch(
+    seq_one: Vec<i64>,
+    seq_two: Vec<i64>,
+    match_score: f64,
+    mismatch_score: f64,
+    indel_score: f64,
+    gap_val: i64,
+) -> PyResult<(Vec<i64>, Vec<i64>)> {
+    // Invariant -- gap_val cannot be in either sequence
+    if (seq_one.contains(&gap_val)) || (seq_two.contains(&gap_val)) {
+        return Err(PyValueError::new_err(
+            "Gap value {gap_val} cannot be present in either sequence",
+        ));
+    }
+
+    // Use the shorter of the two sequences for the column dimension so that there's less memory
+    // fragmentation
+    let seq_one_len = seq_one.len();
+    let seq_two_len = seq_two.len();
+    let (swapped, seq_one_proc, seq_two_proc) = if seq_two_len > seq_one_len {
+        (true, seq_two, seq_one)
     } else {
-        (aligned_seq_one_proc, aligned_seq_two_proc)
+        (false, seq_one, seq_two)
     };
+
+    let (mut aligned_seq_one, mut aligned_seq_two) = needleman_wunsch_core(
+        &seq_one_proc,
+        &seq_two_proc,
+        indel_score,
+        gap_val,
+        |i, j| {
+            if seq_one_proc[i] == seq_two_proc[j] {
+                match_score
+            } else {
+                mismatch_score
+            }
+        },
+    );
+
+    // Swap back if we swapped sequences for the column optimization
+    if swapped {
+        std::mem::swap(&mut aligned_seq_one, &mut aligned_seq_two);
+    }
+
+    Ok((aligned_seq_one, aligned_seq_two))
+}
+
+/// Computes an optimal global pairwise alignment between two sequences of integers using the
+/// Needleman-Wunsch algorithm with a precomputed score matrix, and returns the corresponding
+/// aligned sequences, with any gaps represented by `gap_val`.
+///
+/// Unlike the standard `needleman_wunsch` function which uses binary match/mismatch scoring, this
+/// variant accepts a full `len(seq_one) x len(seq_two)` score matrix where `score_matrix[i][j]`
+/// gives the score for aligning `seq_one[i]` with `seq_two[j]`. This enables custom pairwise
+/// scoring functions (e.g., text similarity, spatial proximity) to be used in the alignment.
+///
+/// # Complexity
+/// This takes O(mn) time and O(mn) space complexity, where m and n are the lengths of the two
+/// sequences, respectively.
+///
+/// # References
+/// <https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm>
+#[pyfunction]
+#[pyo3(signature = (seq_one, seq_two, score_matrix, indel_score=-1.0, gap_val=-1))]
+pub fn needleman_wunsch_with_score_matrix(
+    seq_one: Vec<i64>,
+    seq_two: Vec<i64>,
+    score_matrix: Vec<Vec<f64>>,
+    indel_score: f64,
+    gap_val: i64,
+) -> PyResult<(Vec<i64>, Vec<i64>)> {
+    // Invariant -- gap_val cannot be in either sequence
+    if (seq_one.contains(&gap_val)) || (seq_two.contains(&gap_val)) {
+        return Err(PyValueError::new_err(
+            "Gap value {gap_val} cannot be present in either sequence",
+        ));
+    }
+
+    let seq_one_len = seq_one.len();
+    let seq_two_len = seq_two.len();
+
+    // Validate score matrix dimensions
+    if score_matrix.len() != seq_one_len {
+        return Err(PyValueError::new_err(
+            "score_matrix must have len(seq_one) rows",
+        ));
+    }
+    for (i, row) in score_matrix.iter().enumerate() {
+        if row.len() != seq_two_len {
+            return Err(PyValueError::new_err(format!(
+                "score_matrix row {i} has length {} but expected {seq_two_len}",
+                row.len()
+            )));
+        }
+    }
+
+    // NOTE: We do NOT swap sequences here (unlike the standard NW), because the score matrix
+    // is indexed as score_matrix[seq_one_idx][seq_two_idx] and swapping would invalidate that.
+    let (aligned_seq_one, aligned_seq_two) =
+        needleman_wunsch_core(&seq_one, &seq_two, indel_score, gap_val, |i, j| {
+            score_matrix[i][j]
+        });
 
     Ok((aligned_seq_one, aligned_seq_two))
 }
@@ -307,7 +385,7 @@ fn nw_score(
 /// two sequences, respectively.
 ///
 /// # References
-/// https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm
+/// <https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm>
 #[pyfunction]
 #[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
 pub fn hirschberg(
@@ -450,7 +528,7 @@ fn score_pair(
 /// This takes O(n) time and O(1) space complexity, where n is the length of the sequence.
 ///
 /// # References
-/// https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+/// <https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm>
 #[pyfunction]
 #[pyo3(signature = (seq_one, seq_two, match_score=1.0, mismatch_score=-1.0, indel_score=-1.0, gap_val=-1))]
 pub fn alignment_score(
@@ -479,8 +557,9 @@ pub fn alignment_score(
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn _sequence_align(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _sequence_align(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(needleman_wunsch, m)?)?;
+    m.add_function(wrap_pyfunction!(needleman_wunsch_with_score_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hirschberg, m)?)?;
     m.add_function(wrap_pyfunction!(alignment_score, m)?)?;
     Ok(())

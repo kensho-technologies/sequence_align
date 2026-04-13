@@ -4,10 +4,10 @@ build-backend = "maturin"
 
 [project]
 name = "sequence_align"
-version = "0.3.0"
+version = "0.4.0"
 description = "Efficient implementations of Needleman-Wunsch and other sequence alignment algorithms in Rust with Python bindings."
 readme = "README.md"
-requires-python = ">=3.9,<3.14"
+requires-python = ">=3.10,<3.15"
 authors = [
     {name = "Kensho Technologies LLC.", email = "sequence-align-maintainer@kensho.com"},
 ]
@@ -17,11 +17,11 @@ maintainers = [
 license = {file = "LICENSE"}  # Apache 2.0
 classifiers = [
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Rust",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -32,34 +32,74 @@ classifiers = [
 source = "https://github.com/kensho-technologies/sequence_align"
 "Homepage" = "https://github.com/kensho-technologies/sequence_align"
 "Bug Tracker" = "https://github.com/kensho-technologies/sequence_align/issues"
+"Changelog" = "https://github.com/kensho-technologies/sequence_align/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
-    "bandit",
-    "black",
-    "flake8",
-    "isort>=5.0.0,<6",
-    "mypy",
-    "psutil",
-    "pydocstyle",
-    "pylint",
-    "pytest",
-    "pytest-cov",
-    "pytest-subtests",
-    "pyyaml",
+    "mypy>=1.10,<2",
+    "psutil>=7,<8",
+    "pytest>=9,<10",
+    "pytest-cov>=7,<8",
+    "pytest-subtests>=0.15.0,<0.16",
+    "pyyaml>=6,<7",
+    "ruff>=0.15,<0.16",
     "types-psutil",
     "types-pyyaml",
 ]
-
-[tool.black]
-line-length = 100
 
 [tool.maturin]
 # See https://www.maturin.rs/project_layout.html#import-rust-as-a-submodule-of-your-project
 # Allows "from sequence_align import _sequence_align" import
 module-name = "sequence_align._sequence_align"
-# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
-features = ["pyo3/extension-module"]
 
-[tool.bandit]
-exclude_dirs = ["tests"]
+[tool.ruff]
+line-length = 100
+extend-exclude = [".venv"]
+output-format = "grouped"
+unsafe-fixes = true
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "W",      # pycodestyle warnings
+    "I",      # isort
+    "D2",     # pydocstyle formatting
+    "D3",     # pydocstyle quote formatting
+    "UP",     # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "D203",   # one-blank-line-before-class (incompatible with D211)
+    "D213",   # multi-line-summary-second-line (incompatible with D212)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]  # Ignore pydocstyle checks on tests
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+lines-after-imports = 2
+force-sort-within-sections = true
+
+[tool.mypy]
+strict = true
+show_error_codes = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "^\\s*\\.\\.\\.\\s*$",
+]

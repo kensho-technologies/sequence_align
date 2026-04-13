@@ -2,16 +2,19 @@
   <a href="https://codecov.io/gh/kensho-technologies/sequence_align"><img src="https://codecov.io/gh/kensho-technologies/sequence_align/branch/main/graph/badge.svg" /></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
   <a href="http://www.repostatus.org/#active"><img src="http://www.repostatus.org/badges/latest/active.svg" /></a>
-  <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" /></a>
 
 # sequence_align
 Efficient implementations of [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm)
 and other sequence alignment algorithms written in Rust with Python bindings via [PyO3](https://github.com/PyO3/pyo3).
+Supports both binary match/mismatch scoring and custom pairwise scoring functions for applications
+like OCR text alignment, spatial matching, and other domains where continuous similarity measures
+are needed.
 
 <p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/sequence_align.png"></p>
 
 ## Installation
-`sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align) for Python 3.9 - 3.13, making installation as simple as the following --
+`sequence_align` is distributed via [PyPi](https://pypi.org/project/sequence_align) for Python 3.10 - 3.14, making installation as simple as the following --
 no special setup required for cross-platform compatibility, Rust installation, etc.!
 
 ``` bash
@@ -25,21 +28,25 @@ are installed on your system. Then, install [Maturin](https://www.maturin.rs/#us
 from the root of your cloned repo to build and install `sequence_align` in your active Python environment.
 
 ## Quick Start
-Pairwise sequence algorithms are available in [sequence_align.pairwise](src/sequence_align/pairwise.py).
-Currently, two algorithms are implemented: the [Needleman-Wunsch algorithm](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm)
-and [Hirschberg’s algorithm](https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm). Needleman-Wunsch is
-commonly used for global sequence alignment, but suffers from the fact that it uses `O(M*N)` space,
-where `M` and `N` are the lengths of the two sequences being aligned. Hirschberg’s algorithm modifies Needleman-Wunsch
-to have the same time complexity (`O(M*N)`), but only use `O(min{M, N})` space, making it an appealing option
-for memory-limited applications or extremely large sequences.
+Pairwise sequence algorithms are available in [`sequence_align.pairwise`](src/sequence_align/pairwise.py).
+The following algorithms are implemented:
 
-One may also compute the Needleman-Wunsch alignment score for alignments produced by either algorithm
-using [sequence_align.pairwise.alignment_score](src/sequence_align/pairwise.py).
+- [**Needleman-Wunsch**](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm): Global sequence alignment with `O(M*N)` time and space.
+- [**Needleman-Wunsch with custom scores**](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm): A variant that accepts a custom pairwise scoring function `score_fn(a, b) -> float` instead of flat match/mismatch scores. This is useful when alignment quality depends on continuous similarity measures rather than binary element equality.
+- [**Hirschberg**](https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm): A modification of Needleman-Wunsch with the same `O(M*N)` time complexity but only `O(min{M, N})` space, making it an appealing option for memory-limited applications or extremely large sequences.
+
+One may also compute the Needleman-Wunsch alignment score for alignments produced by any of the above algorithms
+using [`alignment_score`](src/sequence_align/pairwise.py).
 
 Using these algorithms is straightforward:
 
 ``` python
-from sequence_align.pairwise import alignment_score, hirschberg, needleman_wunsch
+from sequence_align.pairwise import (
+    alignment_score,
+    hirschberg,
+    needleman_wunsch,
+    needleman_wunsch_with_scores,
+)
 
 
 # See https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm#/media/File:Needleman-Wunsch_pairwise_sequence_alignment.png
@@ -50,10 +57,10 @@ seq_b = ["G", "C", "A", "T", "G", "C", "G"]
 aligned_seq_a, aligned_seq_b = needleman_wunsch(
     seq_a,
     seq_b,
+    "_",  # Represent gaps with this value
     match_score=1.0,
     mismatch_score=-1.0,
     indel_score=-1.0,
-    gap="_",
 )
 
 # Expects ["G", "_", "A", "T", "T", "A", "C", "A"]
@@ -66,10 +73,10 @@ print(aligned_seq_b)
 score = alignment_score(
     aligned_seq_a,
     aligned_seq_b,
+    "_",
     match_score=1.0,
     mismatch_score=-1.0,
     indel_score=-1.0,
-    gap="_",
 )
 print(score)
 
@@ -81,10 +88,10 @@ seq_b = ["T", "A", "T", "G", "C"]
 aligned_seq_a, aligned_seq_b = hirschberg(
     seq_a,
     seq_b,
+    "_",
     match_score=2.0,
     mismatch_score=-1.0,
     indel_score=-2.0,
-    gap="_",
 )
 
 # Expects ["A", "G", "T", "A", "C", "G", "C", "A"]
@@ -97,12 +104,54 @@ print(aligned_seq_b)
 score = alignment_score(
     aligned_seq_a,
     aligned_seq_b,
+    "_",
     match_score=2.0,
     mismatch_score=-1.0,
     indel_score=-2.0,
-    gap="_",
 )
 print(score)
+
+
+# Custom pairwise scoring: align words using character overlap similarity
+words_a = ["hello", "world", "foo"]
+words_b = ["hallo", "welt", "baz", "foo"]
+
+
+def char_overlap_score(a: str, b: str) -> float:
+    """Score based on character-level overlap between two words."""
+    if a == b:
+        return 2.0
+    shared = len(set(a) & set(b))
+    total = len(set(a) | set(b))
+    return (2.0 * shared / total) - 1.0 if total > 0 else -1.0
+
+
+aligned_words_a, aligned_words_b = needleman_wunsch_with_scores(
+    words_a,
+    words_b,
+    "_",
+    score_fn=char_overlap_score,
+    indel_score=-1.0,
+)
+
+# Expects ["hello", "world", "_", "foo"]
+print(aligned_words_a)
+
+# Expects ["hallo", "welt", "baz", "foo"]
+print(aligned_words_b)
+```
+
+## Development
+
+To set up a local development environment, ensure that both
+[Python](https://wiki.python.org/moin/BeginnersGuide/Download) and [Rust](https://www.rust-lang.org/tools/install)
+are installed, then:
+
+``` bash
+maturin develop -r  # build and install in the active Python environment
+./scripts/test.sh   # run tests via pytest
+./scripts/lint.sh   # run all linters (ruff, mypy, cargo fmt, cargo clippy)
+./scripts/lint.sh --fix  # auto-fix where possible
 ```
 
 ## Performance Benchmarks
@@ -121,6 +170,9 @@ _(Please note that some lines terminate early, as some toolkits took prohibitive
 <p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/runtime_benchmark.png"></p>
 
 <p><img width="800px" src="https://raw.githubusercontent.com/kensho-technologies/sequence_align/main/docs/images/memory_benchmark.png"></p>
+
+## Changelog
+See [CHANGELOG.md](CHANGELOG.md) for a full list of changes across versions.
 
 ## License
 Licensed under the Apache 2.0 License. Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
