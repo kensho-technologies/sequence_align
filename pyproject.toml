@@ -45,6 +45,9 @@ dev = [
     "ruff>=0.15,<0.16",
     "types-psutil",
     "types-pyyaml",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings",
 ]
 
 [tool.maturin]
